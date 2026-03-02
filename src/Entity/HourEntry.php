@@ -14,14 +14,17 @@ class HourEntry
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $activity_id = null;
+    #[ORM\ManyToOne(inversedBy: 'affect')]
+    #[ORM\JoinColumn(name: 'activity_id', referencedColumnName : 'id', nullable: true)]
+    private ?Activities $affect = null;
 
-    #[ORM\Column]
-    private ?int $user_id = null;
+    #[ORM\ManyToOne(inversedBy: 'selected')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName : 'id', nullable: false)]
+    private ?User $selected = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $project_id = null;
+    #[ORM\ManyToOne(inversedBy: 'link')]
+    #[ORM\JoinColumn(name: 'project_id', referencedColumnName : 'id', nullable: true)]
+    private ?User $project_id = null;
 
     #[ORM\Column]
     private ?\DateTime $start_date = null;
@@ -35,11 +38,10 @@ class HourEntry
     #[ORM\Column]
     private ?\DateTime $created_at = null;
 
-    #[ORM\Column]
-    private ?int $created_by = null;
+    #[ORM\ManyToOne(inversedBy: 'created')]
+    #[ORM\JoinColumn(name: 'created_by', referencedColumnName : 'id', nullable: false)]
+    private ?User $created = null;
 
-    #[ORM\ManyToOne(inversedBy: 'hourEntries')]
-    private ?Activities $activities = null;
 
     public function getId(): ?int
     {
@@ -53,14 +55,14 @@ class HourEntry
         return $this;
     }
 
-    public function getActivityId(): ?int
+    public function getActivityId(): ?Activities
     {
-        return $this->activity_id;
+        return $this->affect;
     }
 
-    public function setActivityId(?int $activity_id): static
+    public function setActivityId(?Activities $activity_id): static
     {
-        $this->activity_id = $activity_id;
+        $this->affect = $affect;
 
         return $this;
     }
@@ -137,26 +139,45 @@ class HourEntry
         return $this;
     }
 
-    public function getCreatedBy(): ?int
+    public function getCreatedBy(): ?User
     {
         return $this->created_by;
     }
 
-    public function setCreatedBy(int $created_by): static
+    public function setCreatedBy(User $created): static
     {
-        $this->created_by = $created_by;
+        $this->created_by = $created;
 
         return $this;
-    }
-
-    public function getActivities(): ?Activities
-    {
-        return $this->activities;
     }
 
     public function setActivities(?Activities $activities): static
     {
         $this->activities = $activities;
+
+        return $this;
+    }
+
+    public function getLink(): ?Project
+    {
+        return $this->link;
+    }
+
+    public function setLink(?Project $link): static
+    {
+        $this->link = $link;
+
+        return $this;
+    }
+
+    public function getSelected(): ?User
+    {
+        return $this->selected;
+    }
+
+    public function setSelected(?User $user): static
+    {
+        $this->selected = $user;
 
         return $this;
     }
