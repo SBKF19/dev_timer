@@ -64,7 +64,7 @@ class User
      */
     #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'created')]
     private Collection $created;
-    /**
+     /*
      * @var Collection<int, Project>
      */
     #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'manager')]
