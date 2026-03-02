@@ -41,10 +41,18 @@ class Project
     #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'projects')]
     private Collection $usersInProject;
 
+    /**
+     * @var Collection<int, HourEntry>
+     */
+    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'link')]
+    private Collection $link;
+
     public function __construct()
     {
         $this->usersInProject = new ArrayCollection();
+        $this->link = new ArrayCollection();
         $this->created_at = new \DateTimeImmutable();
+
     }
 
     public function getId(): ?int
@@ -107,6 +115,36 @@ class Project
         if ($this->usersInProject->removeElement($user)) {
             $user->removeProject($this);
         }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, HourEntry>
+     */
+    public function getLink(): Collection
+    {
+        return $this->link;
+    }
+
+    public function addLink(HourEntry $link): static
+    {
+        if (!$this->link->contains($link)) {
+            $this->link->add($link);
+            $link->setLink($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLink(HourEntry $link): static
+    {
+        if ($this->link->removeElement($link)) {
+            // set the owning side to null (unless already changed)
+            if ($link->getLink() === $this) {
+                $link->setLink(null);
+            }
+        }
+
         return $this;
     }
 }
