@@ -24,7 +24,7 @@ class HourEntry
 
     #[ORM\ManyToOne(inversedBy: 'link')]
     #[ORM\JoinColumn(name: 'project_id', referencedColumnName : 'id', nullable: true)]
-    private ?User $project_id = null;
+    private ?Project $project_id = null;
 
     #[ORM\Column]
     private ?\DateTime $start_date = null;
@@ -79,12 +79,12 @@ class HourEntry
         return $this;
     }
 
-    public function getProjectId(): ?int
+    public function getProjectId(): ?Project
     {
         return $this->project_id;
     }
 
-    public function setProjectId(?int $project_id): static
+    public function setProjectId(?Project $project_id): static
     {
         $this->project_id = $project_id;
 
