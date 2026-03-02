@@ -19,28 +19,32 @@ class Project
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTime $created_at = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?\DateTimeImmutable $created_at = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    private ?\DateTime $archived = null;
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $archived_at = null;
 
-    #[ORM\ManyToOne(inversedBy: 'projects')]
+    /**
+     * Relation ManyToOne vers User (le manager unique du projet)
+     */
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'managedProjects')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $manage = null;
+    private ?User $manager = null;
 
     /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'projects')]
-    private Collection $users;
+    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'projects')]
+    private Collection $usersInProject;
 
     public function __construct()
     {
-        $this->users = new ArrayCollection();
+        $this->usersInProject = new ArrayCollection();
+        $this->created_at = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -48,22 +52,13 @@ class Project
         return $this->id;
     }
 
-    public function setId(int $id): static
-    {
-        $this->id = $id;
-
-        return $this;
-    }
-
     public function getName(): ?string
     {
         return $this->name;
     }
-
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -71,71 +66,47 @@ class Project
     {
         return $this->description;
     }
-
-    public function setDescription(string $description): static
+    public function setDescription(?string $description): static
     {
         $this->description = $description;
-
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTime
+    public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->created_at;
     }
 
-    public function setCreatedAt(\DateTime $created_at): static
+    public function getManager(): ?User
     {
-        $this->created_at = $created_at;
-
+        return $this->manager;
+    }
+    public function setManager(?User $manager): static
+    {
+        $this->manager = $manager;
         return $this;
     }
 
-    public function getArchived(): ?\DateTime
+    /** @return Collection<int, User> */
+    public function getUsersInProject(): Collection
     {
-        return $this->archived;
+        return $this->usersInProject;
     }
 
-    public function setArchived(?\DateTime $archived): static
+    public function addUserInProject(User $user): static
     {
-        $this->archived = $archived;
-
-        return $this;
-    }
-
-    public function getManage(): ?User
-    {
-        return $this->manage;
-    }
-
-    public function setManage(?User $manage): static
-    {
-        $this->manage = $manage;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    public function getUsers(): Collection
-    {
-        return $this->users;
-    }
-
-    public function addUser(User $user): static
-    {
-        if (!$this->users->contains($user)) {
-            $this->users->add($user);
+        if (!$this->usersInProject->contains($user)) {
+            $this->usersInProject->add($user);
+            $user->addProject($this); // Synchronise le côté User
         }
-
         return $this;
     }
 
-    public function removeUser(User $user): static
+    public function removeUserInProject(User $user): static
     {
-        $this->users->removeElement($user);
-
+        if ($this->usersInProject->removeElement($user)) {
+            $user->removeProject($this);
+        }
         return $this;
     }
 }
