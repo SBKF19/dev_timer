@@ -54,6 +54,17 @@ class User
     private Collection $projects;
 
     /**
+     * @var Collection<int, HourEntry>
+     */
+    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'selected')]
+    private Collection $selected;
+
+    /**
+     * @var Collection<int, HourEntry>
+     */
+    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'created')]
+    private Collection $created;
+     /*
      * @var Collection<int, Project>
      */
     #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'manager')]
@@ -62,6 +73,8 @@ class User
     public function __construct()
     {
         $this->projects = new ArrayCollection();
+        $this->selected = new ArrayCollection();
+        $this->created = new ArrayCollection();
         $this->managedProjects = new ArrayCollection();
     }
 
@@ -188,4 +201,66 @@ class User
         $this->role = $role;
         return $this;
     }
+
+    /**
+     * @return Collection<int, HourEntry>
+     */
+    public function getSelected(): Collection
+    {
+        return $this->selected;
+    }
+
+    public function addSelected(HourEntry $selected): static
+    {
+        if (!$this->selected->contains($selected)) {
+            $this->selected->add($selected);
+            $selected->setSelected($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSelected(HourEntry $selected): static
+    {
+        if ($this->selected->removeElement($selected)) {
+            // set the owning side to null (unless already changed)
+            if ($selected->getSelected() === $this) {
+                $selected->setSelected(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, HourEntry>
+     */
+    public function getCreated(): Collection
+    {
+        return $this->created;
+    }
+
+    public function addCreated(HourEntry $selected): static
+    {
+        if (!$this->created->contains($created)) {
+            $this->created->add($created);
+            $created->setCreated($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCreated(HourEntry $created): static
+    {
+        if ($this->created->removeElement($created)) {
+            // set the owning side to null (unless already changed)
+            if ($created->getCreated() === $this) {
+                $created->setCreated(null);
+            }
+        }
+
+        return $this;
+    }
+
+
 }
