@@ -69,6 +69,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $projects;
 
     /**
+     * @var Collection<int, HourEntry>
+     */
+    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'selected')]
+    private Collection $selected;
+
+    /**
+     * @var Collection<int, HourEntry>
+     */
+    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'created')]
+    private Collection $created;
+    /*
      * @var Collection<int, Project>
      */
     #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'manager')]
@@ -76,6 +87,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        $this->projects = new ArrayCollection();
+        $this->selected = new ArrayCollection();
+        $this->created = new ArrayCollection();
+        $this->managedProjects = new ArrayCollection();
         $this->projects = new ArrayCollection();
         $this->managedProjects = new ArrayCollection();
         $this->projects = new ArrayCollection();
