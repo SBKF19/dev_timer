@@ -67,14 +67,14 @@ class HourEntry
         return $this;
     }
 
-    public function getUserId(): ?int
+    public function getUserId(): ?User
     {
         return $this->user_id;
     }
 
-    public function setUserId(int $user_id): static
+    public function setUserId(User $user): static
     {
-        $this->user_id = $user_id;
+        $this->selected = $user;
 
         return $this;
     }
@@ -146,14 +146,14 @@ class HourEntry
 
     public function setCreatedBy(User $created): static
     {
-        $this->created_by = $created;
+        $this->created = $created;
 
         return $this;
     }
 
     public function setActivities(?Activities $activities): static
     {
-        $this->activities = $activities;
+        $this->affect = $activities;
 
         return $this;
     }

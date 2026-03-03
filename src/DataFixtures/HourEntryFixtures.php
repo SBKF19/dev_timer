@@ -24,8 +24,8 @@ class HourEntryFixtures extends Fixture implements DependentFixtureInterface
     public function load(ObjectManager $manager): void
     {
         $activities = $manager->getRepository(Activities::class)->findAll();
-        $users = $manager->getRepository(User::class)->findAll();
         $projects = $manager->getRepository(Project::class)->findAll();
+        $userRefs = ['user_admin@devtimer.fr', 'user_alice@devtimer.fr'];
 
         $hourEntries = [];
 
@@ -53,21 +53,21 @@ class HourEntryFixtures extends Fixture implements DependentFixtureInterface
 
             $hourEntries[] = [
                 'activity_id' => $activities[array_rand($activities)],
-                'user_id' => $users[array_rand($users)],
+                'user_id' => $this->getReference($userRefs[array_rand($userRefs)], User::class),
                 'project_id' => $projects[array_rand($projects)],
                 'start_date' => $start,
                 'end_date' => $end,
                 'commentary' => rand(0, 1) ? 'Travail sur feature X' : '',
-                'created_at' => new \DateTimeImmutable(),
-                'created_by' => 'fixture'
+                'created_at' => new \DateTime(),
+                'created_by' => $this->getReference($userRefs[array_rand($userRefs)], User::class),
             ];
         }
 
         foreach ($hourEntries as $index => $data) {
             $hourEntry = new HourEntry();
             $hourEntry->setActivities($data['activity_id']);
-            $hourEntry->setUser($data['user_id']);
-            $hourEntry->setProject($data['project_id']);
+            $hourEntry->setUserId($data['user_id']);
+            $hourEntry->setProjectId($data['project_id']);
             $hourEntry->setStartDate($data['start_date']);
             $hourEntry->setEndDate($data['end_date']);
             $hourEntry->setCommentary($data['commentary']);
