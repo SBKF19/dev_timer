@@ -35,9 +35,6 @@ class Project
     #[ORM\JoinColumn(nullable: false)]
     private ?User $createdBy = null;
 
-    /**
-     * Relation ManyToOne vers User (le manager unique du projet)
-     */
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'managedProjects')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $manager = null;
@@ -112,7 +109,7 @@ class Project
     {
         if (!$this->usersInProject->contains($user)) {
             $this->usersInProject->add($user);
-            $user->addProject($this); // Synchronise le côté User
+            $user->addProject($this);
         }
         return $this;
     }
@@ -174,7 +171,6 @@ class Project
     public function removeLink(HourEntry $link): static
     {
         if ($this->link->removeElement($link)) {
-            // set the owning side to null (unless already changed)
             if ($link->getLink() === $this) {
                 $link->setLink(null);
             }

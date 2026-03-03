@@ -276,19 +276,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        // On retourne au moins ROLE_USER par défaut
         return ['ROLE_USER'];
     }
 
-    // AJOUTE cette méthode (obligatoire pour UserInterface)
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    // AJOUTE cette méthode (obligatoire pour UserInterface)
     public function eraseCredentials(): void
     {
-        // Si tu stockes des données temporaires sensibles, vide-les ici
     }
 }

@@ -39,7 +39,6 @@ class ProjectFixtures extends Fixture implements DependentFixtureInterface
             $project->setDescription($data['description']);
             $project->setColor($data['color']);
 
-            // On récupère les utilisateurs par leur référence (email)
             $managerUser = $this->getReference('user_' . $data['manager'], User::class);
             $creatorUser = $this->getReference('user_' . $data['creator'], User::class);
 

@@ -23,8 +23,6 @@ class RoleFixtures extends Fixture
     }
     public function load(ObjectManager $manager): void
     {
-        // $product = new Product();
-        // $manager->persist($product);
         for ($i = 0; $i < count(self::data()); ++$i) {
             $role = new Role();
             $role->setId(self::data()[$i]['id']);
