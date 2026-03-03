@@ -28,6 +28,13 @@ class Project
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $archived_at = null;
 
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $color = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $createdBy = null;
+
     /**
      * Relation ManyToOne vers User (le manager unique du projet)
      */
@@ -107,6 +114,34 @@ class Project
         if ($this->usersInProject->removeElement($user)) {
             $user->removeProject($this);
         }
+        return $this;
+    }
+
+    public function setArchivedAt(?\DateTimeInterface $archived_at): static
+    {
+        $this->archived_at = $archived_at;
+        return $this;
+    }
+
+    public function getColor(): ?string
+    {
+        return $this->color;
+    }
+
+    public function setColor(?string $color): static
+    {
+        $this->color = $color;
+        return $this;
+    }
+
+    public function getCreatedBy(): ?User
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(?User $createdBy): static
+    {
+        $this->createdBy = $createdBy;
         return $this;
     }
 }
