@@ -3,16 +3,19 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -42,6 +45,18 @@ class User
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $contract_end_date = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private ?\DateTimeInterface $create_at = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $last_login = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $color = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $deleted_at = null;
 
     #[ORM\ManyToOne(inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: false)]
@@ -76,6 +91,12 @@ class User
         $this->selected = new ArrayCollection();
         $this->created = new ArrayCollection();
         $this->managedProjects = new ArrayCollection();
+        $this->projects = new ArrayCollection();
+        $this->managedProjects = new ArrayCollection();
+        $this->projects = new ArrayCollection();
+        $this->managedProjects = new ArrayCollection();
+        // On initialise souvent la date de création par défaut
+        $this->create_at = new \DateTime();
     }
 
     // --- GESTION DES COLLECTIONS ---
@@ -202,65 +223,68 @@ class User
         return $this;
     }
 
-    /**
-     * @return Collection<int, HourEntry>
-     */
-    public function getSelected(): Collection
+    public function setContractEndDate(?\DateTimeInterface $contract_end_date): static
     {
-        return $this->selected;
-    }
-
-    public function addSelected(HourEntry $selected): static
-    {
-        if (!$this->selected->contains($selected)) {
-            $this->selected->add($selected);
-            $selected->setSelected($this);
-        }
-
+        $this->contract_end_date = $contract_end_date;
         return $this;
     }
 
-    public function removeSelected(HourEntry $selected): static
+    public function getCreateAt(): ?\DateTimeInterface
     {
-        if ($this->selected->removeElement($selected)) {
-            // set the owning side to null (unless already changed)
-            if ($selected->getSelected() === $this) {
-                $selected->setSelected(null);
-            }
-        }
+        return $this->create_at;
+    }
 
+    public function setCreateAt(\DateTimeInterface $create_at): static
+    {
+        $this->create_at = $create_at;
         return $this;
     }
 
-    /**
-     * @return Collection<int, HourEntry>
-     */
-    public function getCreated(): Collection
+    public function getLastLogin(): ?\DateTimeInterface
     {
-        return $this->created;
+        return $this->last_login;
     }
 
-    public function addCreated(HourEntry $selected): static
+    public function setLastLogin(?\DateTimeInterface $last_login): static
     {
-        if (!$this->created->contains($created)) {
-            $this->created->add($created);
-            $created->setCreated($this);
-        }
-
+        $this->last_login = $last_login;
         return $this;
     }
 
-    public function removeCreated(HourEntry $created): static
+    public function getColor(): ?string
     {
-        if ($this->created->removeElement($created)) {
-            // set the owning side to null (unless already changed)
-            if ($created->getCreated() === $this) {
-                $created->setCreated(null);
-            }
-        }
+        return $this->color;
+    }
 
+    public function setColor(?string $color): static
+    {
+        $this->color = $color;
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeInterface
+    {
+        return $this->deleted_at;
+    }
+
+    public function setDeletedAt(?\DateTimeInterface $deleted_at): static
+    {
+        $this->deleted_at = $deleted_at;
         return $this;
     }
 
 
+    public function getRoles(): array
+    {
+        return ['ROLE_USER'];
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    public function eraseCredentials(): void
+    {
+    }
 }

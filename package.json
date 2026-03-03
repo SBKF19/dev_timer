@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "node": "^25.7.0",
+    "postcss-loader": "^8.2.1",
+    "tailwindcss": "^4.2.1"
+  },
+  "devDependencies": {
+    "@hotwired/stimulus": "^3.0.0",
+    "@hotwired/turbo": "^7.1.0 || ^8.0",
+    "@symfony/stimulus-bridge": "^3.2.0 || ^4.0.0",
+    "@symfony/ux-turbo": "file:vendor/symfony/ux-turbo/assets",
+    "@symfony/webpack-encore": "^4.0.0",
+    "@tailwindcss/postcss": "^4.2.1",
+    "core-js": "^3.48.0",
+    "daisyui": "^5.5.19",
+    "loader": "^2.1.1",
+    "postcss": "^8.5.6"
+  },
+  "scripts": {
+    "dev": "encore dev",
+    "watch": "encore dev --watch",
+    "build": "encore production --progress"
+  }
+}
