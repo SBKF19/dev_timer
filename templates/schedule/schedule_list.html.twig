@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion des horaires
+{% endblock %}
+
+{% block body %}
+	<div class="">
+		{% include "" %}
+		<div class="">
+			<div class="">
+				<h2 class="">Liste des horraires de l'entreprise</h2>
+				<a href="{{ path('schedule_ajout') }}" class="">Ajouter un horaire</a>
+			</div>
+
+
+            <div class="">
+            {% if pagination|length == 0 %}
+                <p class="">Aucun horaire trouvé.</p>
+            {% else %}
+
+			<div class="">
+
+                {% set jours = {1: 'LUNDI', 2: 'MARDI', 3: 'MERCREDI', 4: 'JEUDI', 5: 'VENDREDI'} %}
+
+                <table class="w-full text-center border">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="p-3">Jour</th>
+                            <th class="p-3">Horaires de début de journée</th>
+                            <th class="p-3">Horaires de fin de journée</th>
+                            <th class="p-3">Action</th>
+                        </tr>
+                    </thead>
+            <tbody>
+        {# groupement des horaires par le numéro du jour #}
+        {% for dayNumber, schedules in pagination|group_by('dayOfWeek') %}
+            <tr class="border-t">
+                <td class="p-3 font-semibold">{{ jours[dayNumber] }}</td>
+
+                {# Horaires de début de journée #}
+                <td class="p-3">
+                {# On vérifie si il existe un premier horaire correspondant au numéro du jour (horaire de début de journée)  #}
+                    {% if schedules[0] is defined %}
+
+                {# affichage de l'horaire au bon format #}
+                        {{ schedules[0].startTime|date('H\\hi') }} - {{ schedules[0].endTime|date('H\\hi') }}
+                    {% endif %}
+                </td>
+
+                {# Horaires de fin de journée #}
+                <td class="p-3">
+                    {% if schedules[1] is defined %}
+                        {{ schedules[1].startTime|date('H\\hi') }} - {{ schedules[1].endTime|date('H\\hi') }}
+                    {% else %}
+                        /
+                    {% endif %}
+                </td>
+
+                <td class="p-3">
+                    <button>Modifier</button> <button>Supprimer</button>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+			</div>
+            <div class="pagination">
+				{{ knp_pagination_render(pagination) }}
+			</div>
+		</div>
+	</div>
+{% endblock %}
