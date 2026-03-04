@@ -1,72 +1,89 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Gestion des horaires
-{% endblock %}
+{% block title %}Gestion des horaires{% endblock %}
 
 {% block body %}
-	<div class="">
-		{% include "" %}
-		<div class="">
-			<div class="">
-				<h2 class="">Liste des horraires de l'entreprise</h2>
-				<a href="{{ path('schedule_ajout') }}" class="">Ajouter un horaire</a>
-			</div>
+<div class="min-h-screen bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-2xl font-bold text-[#1F384C]">Horaires de l’entreprise</h1>
+            <a href="#" class="btn btn-primary bg-[#2A7DE3] border-none text-white normal-case px-6 hover:bg-[#18355F] rounded-lg">
+                Ajouter des horaires
+            </a>
+        </div>
+
+        <div class="bg-white rounded-lg border border-[#E3E3E3] shadow-sm overflow-hidden">
+
+            <div class="p-4 border-b border-[#E3E3E3]">
+                <h2 class="text-sm font-semibold text-[#475E80] italic ml-6">
+                    Liste des horaires de l’entreprise
+                </h2>
+            </div>
+
+            <div class="p-10">
+                <div class="overflow-hidden rounded-xl border border-[#E3E3E3]">
+                    <table class="table w-full text-center border-collapse">
+                        <thead>
+                            <tr class="bg-[#F9FAFB] text-[#1F384C]">
+                                <th class="py-4 border-b border-r border-[#E3E3E3] font-medium text-base">Jour</th>
+                                <th class="py-4 border-b border-r border-[#E3E3E3] font-medium text-base">Horaires de début de journée</th>
+                                <th class="py-4 border-b border-r border-[#E3E3E3] font-medium text-base">Horaires de fin de journée</th>
+                                <th class="py-4 border-b border-[#E3E3E3] font-medium text-base">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-[#1F384C]">
+                            {% set jours = {1: 'LUNDI', 2: 'MARDI', 3: 'MERCREDI', 4: 'JEUDI', 5: 'VENDREDI'} %}
+
+                            {# Pour chaque jour, on vérifie qu'il y existe des horaires puis on les place dans un tableau #}
+                            {% for dayNumber, schedule in schedules %}
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="py-4 border-b border-r border-[#E3E3E3] font-medium uppercase text-sm">
+                                        {{ jours[dayNumber] }}
+                                    </td>
+                                {#le premier horaire si il existe correspond aux horaires de début de journée#}
+                                    <td class="py-4 border-b border-r border-[#E3E3E3] text-sm">
+                                        {% if schedule[0].startTime is defined %}
+                                            {{ schedule[0].startTime|date('H\\hi') }} - {{ schedule[0].endTime|date('H\\hi') }}
+                                        {% else %}
+                                            /
+                                        {% endif %}
+                                    </td>
+                                {#le deuxième horaire si il existe correspond aux horaires de fin de journée#}
+                                    <td class="py-4 border-b border-r border-[#E3E3E3] text-sm">
+                                        {% if schedule[1] is defined %}
+                                            {{ schedule[1].startTime|date('H\\hi') }} - {{ schedule[1].endTime|date('H\\hi') }}
+                                        {% else %}
+                                            /
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="py-4 border-b border-[#E3E3E3]">
+                                        <div class="flex justify-center items-center gap-4">
 
 
-            <div class="">
-            {% if pagination|length == 0 %}
-                <p class="">Aucun horaire trouvé.</p>
-            {% else %}
+                                            <a href=""
+                                               class="text-gray-400 hover:text-[#2A7DE3] transition-colors"
+                                               title="Modifier">
+                                                <img src="{{ asset('images/modify_iconepng.png') }}" alt="Modifier" class="w-5 h-5 object-contain">
+                                            </a>
 
-			<div class="">
+                                            <a href=""
+                                               class="text-gray-400 hover:text-red-500 transition-colors"
+                                               title="Supprimer">
+                                                <img src="{{ asset('images/remove_icone.png') }}" alt="Supprimer" class="w-5 h-5 object-contain">
+                                            </a>
 
-                {% set jours = {1: 'LUNDI', 2: 'MARDI', 3: 'MERCREDI', 4: 'JEUDI', 5: 'VENDREDI'} %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                <table class="w-full text-center border">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="p-3">Jour</th>
-                            <th class="p-3">Horaires de début de journée</th>
-                            <th class="p-3">Horaires de fin de journée</th>
-                            <th class="p-3">Action</th>
-                        </tr>
-                    </thead>
-            <tbody>
-        {# groupement des horaires par le numéro du jour #}
-        {% for dayNumber, schedules in pagination|group_by('dayOfWeek') %}
-            <tr class="border-t">
-                <td class="p-3 font-semibold">{{ jours[dayNumber] }}</td>
-
-                {# Horaires de début de journée #}
-                <td class="p-3">
-                {# On vérifie si il existe un premier horaire correspondant au numéro du jour (horaire de début de journée)  #}
-                    {% if schedules[0] is defined %}
-
-                {# affichage de l'horaire au bon format #}
-                        {{ schedules[0].startTime|date('H\\hi') }} - {{ schedules[0].endTime|date('H\\hi') }}
-                    {% endif %}
-                </td>
-
-                {# Horaires de fin de journée #}
-                <td class="p-3">
-                    {% if schedules[1] is defined %}
-                        {{ schedules[1].startTime|date('H\\hi') }} - {{ schedules[1].endTime|date('H\\hi') }}
-                    {% else %}
-                        /
-                    {% endif %}
-                </td>
-
-                <td class="p-3">
-                    <button>Modifier</button> <button>Supprimer</button>
-                </td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-			</div>
-            <div class="pagination">
-				{{ knp_pagination_render(pagination) }}
-			</div>
-		</div>
-	</div>
+        </div>
+    </div>
+</div>
 {% endblock %}
