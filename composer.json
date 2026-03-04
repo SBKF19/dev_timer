@@ -18,12 +18,14 @@
         "symfony/flex": "^2.10",
         "symfony/form": "8.0.*",
         "symfony/framework-bundle": "8.0.*",
+        "symfony/mailer": "8.0.*",
         "symfony/runtime": "8.0.*",
         "symfony/security-bundle": "8.0.*",
         "symfony/twig-bundle": "8.0.*",
         "symfony/validator": "8.0.*",
         "symfony/webpack-encore-bundle": "^2.4",
-        "symfony/yaml": "8.0.*"
+        "symfony/yaml": "8.0.*",
+        "symfonycasts/reset-password-bundle": "^1.24"
     },
     "config": {
         "allow-plugins": {
