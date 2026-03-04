@@ -1,0 +1,36 @@
+{# templates/components/_table.html.twig #}
+
+<div class="overflow-x-auto w-full border border-gray-200 rounded-xl shadow-sm">
+	<table
+		class="table w-full">
+		{# En-tête du tableau (le fameux "haut") #}
+		<thead class="bg-gray-200">
+			<tr>
+				{% for column in columns %}
+					<th class="text-black text-[15px] font-semibold py-4 uppercase tracking-wider">
+						{{ column }}
+					</th>
+				{% endfor %}
+			</tr>
+		</thead>
+
+		{# Corps du tableau #}
+		<tbody class="bg-white">
+			{% for row in data %}
+				<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-none">
+					{% for cell in row %}
+						<td class="text-gray-700 py-4">
+							{{ cell|raw }}
+						</td>
+					{% endfor %}
+				</tr>
+			{% else %}
+				<tr>
+					<td colspan="{{ columns|length }}" class="text-center py-10 text-gray-400 italic">
+						Aucune donnée disponible
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>

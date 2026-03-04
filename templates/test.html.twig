@@ -4,24 +4,80 @@
 {% endblock %}
 
 {% block body %}
-	<div class="flex flex-col items-center justify-center min-h-screen gap-4 bg-base-200">
+	<div class="flex flex-col min-h-screen gap-4 bg-base-50">
 		<h1 class="text-4xl font-bold">Dev Timer</h1>
 
-		<div class="grid grid-flow-col gap-5 text-center auto-cols-max">
-			<div class="flex flex-col p-2 bg-neutral rounded-box text-neutral-content">
-				<span class="countdown font-mono text-5xl">
-					<span style="--value:10;"></span>
-				</span>
-				min
-			</div>
-			<div class="flex flex-col p-2 bg-neutral rounded-box text-neutral-content">
-				<span class="countdown font-mono text-5xl">
-					<span style="--value:24;"></span>
-				</span>
-				sec
-			</div>
+		{# Exemple dans test.html.twig #}
+
+		<div class="flex flex-row">
+			{{ include('composants/date_picker.html.twig', {
+			label: 'Date de début',
+			required: true,
+			value: '2025-11-25T08:30',
+			with_time: true
+			}) }}
+
+			{{ include('composants/input_text.html.twig', {
+			label: 'Votre email',
+			type: 'email',
+			placeholder: 'test@example.com'
+			}) }}
 		</div>
 
-		<button class="btn btn-primary">Start Timer</button>
+		{% set test_items = [
+		{'id': 1, 'label': 'Projet Alpha'},
+		{'id': 2, 'label': 'Design UI'},
+		{'id': 3, 'label': 'Correction Bugs'},
+		{'id': 4, 'label': 'Réunion Client'},
+		{'id': 5, 'label': 'Déploiement Prod'}
+		] %}
+
+		{# Appel du Multi-select avec le tableau statique #}
+		{{ include('composants/select_multi.html.twig', {
+        label: 'Choisir les catégories',
+        name: 'categories',
+        items: test_items,
+        required: true
+    	}) }}
+
+		{{ include('composants/switch.html.twig', {
+		label: 'Intervention effectuée en visio',
+		name: 'is_visio',
+		checked: true
+		}) }}
+
+		<div>
+			{{ include('composants/button.html.twig', {type: 'effacer', label: 'Test'}) }}
+		</div>
+
+		{# test.html.twig #}
+
+		{% set colonnes = ['Développeur', 'Projet', 'Temps', 'Statut', 'Actions'] %}
+
+		{% set lignes = [
+    [
+        'Mikaël Idasiak', 
+        'Dev Timer', 
+        '10 min 24 sec', 
+        '<span class="badge badge-success text-white">En cours</span>',
+        '<button class="btn btn-ghost btn-xs text-blue-600">Détails</button>'
+    ],
+    [
+        'Charles Haller', 
+        'API Rest', 
+        '02 h 15 min', 
+        '<span class="badge badge-ghost">Terminé</span>',
+        '<button class="btn btn-ghost btn-xs text-blue-600">Détails</button>'
+    ]
+] %}
+
+		<div class="p-8">
+			<h2 class="text-xl font-bold mb-4 text-white">Suivi des interventions</h2>
+
+			{{ include('composants/table.html.twig', {
+        columns: colonnes,
+        data: lignes
+    }) }}
+		</div>
 	</div>
 {% endblock %}
