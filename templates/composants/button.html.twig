@@ -1,0 +1,22 @@
+{# templates/components/_button.html.twig #}
+
+{# 1. Sécurisation des variables optionnelles #}
+{% set is_outline = outline|default(false) %}
+{% set btn_size = size|default(null) %}
+{% set btn_type = type|default('confirmer')|lower %}
+
+{# 2. Construction de la classe de base #}
+{% set base_class = 'btn ' ~ (is_outline ? 'btn-outline ' : '') ~ (btn_size ? 'btn-' ~ btn_size : '') %}
+
+{# 3. Mapping des couleurs #}
+{% set variants = {
+    'effacer': 'btn-error text-white',
+    'confirmer': 'btn-primary text-white',
+    'annuler': 'bg-gray-500 hover:bg-gray-600 border-none text-white',
+    'filtrer': 'btn-warning text-white'
+} %}
+
+{% set button_variant = variants[btn_type] ?? 'btn-neutral' %}
+
+	<button class="{{ base_class }} {{ button_variant }} {{ class|default('') }}"> {{ label|default('Bouton') }}
+</button>
