@@ -1,0 +1,99 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion des comptes utilisateur{% endblock %}
+
+{% block body %}
+    <h1 class="">Gestion des comptes utilisateur</h1>
+
+    <a href="{{ path('user_add') }}" class="btn btn-bleu btn-success">
+            + Ajouter un utilisateur
+    </a>
+
+    <div class="card bg-light mb-4">
+    <div class="card-body">
+        <form method="get" action="{{ path('user_list') }}" class="row g-3">
+            
+            {# Recherche textuelle #}
+            <div class="col-md-3">
+                <label for="search" class="form-label">Recherche</label>
+                <input type="text" name="search" id="search" class="form-control" 
+                       placeholder="Nom, prénom, email..." value="{{ filters.search }}">
+            </div>
+
+            {# Sélecteur par Utilisateur #}
+            <div class="col-md-3">
+                <label for="user_id" class="form-label">Utilisateur précis</label>
+                <select name="user_id" id="user_id" class="form-select">
+                    <option value="">Tous les utilisateurs</option>
+                    {% for u in allUsers %}
+                        <option value="{{ u.id }}" {{ filters.user_id == u.id ? 'selected' : '' }}>
+                            {{ u.lastname|upper }} {{ u.firstname }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Sélecteur Statut #}
+            <div class="col-md-3">
+                <label for="status" class="form-label">Statut</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="1" {{ filters.status == '1' ? 'selected' : '' }}>Actif</option>
+                    <option value="0" {{ filters.status == '0' ? 'selected' : '' }}>Inactif</option>
+                </select>
+            </div>
+
+            {# Boutons #}
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                <a href="{{ path('user_list') }}" class="btn btn-outline-secondary w-100">Réinitialiser</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+    <div class ="">
+    <table class="table table-striped table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Email</th>
+                    <th>Dernière connexion</th>
+                    <th>Statut</th>
+                    <th>Rôle</th>
+                    <th>Date d'embauche</th>
+                    <th>Date fin contrat</th>
+                    <th>Couleur</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.firstname }}</td>
+                        <td>{{ user.lastname }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : 'Jamais' }}</td>
+                        <td>{{ user.status }}</td>
+                        <td>{{ user.role.label ?? 'Aucun' }}</td>
+                        <td>{{ user.hiredDate ? user.hiredDate|date('d/m/Y') : '' }}</td>
+                        <td>{{ user.contractEndDate ? user.contractEndDate|date('d/m/Y') : 'non définis' }}</td>
+                        <td style= "color :{{ user.color }} ">{{ user.color }}</td>
+                        <td>
+                            <a href="{{ path('user_edit', {'id': user.id}) }}" class="">
+                            Modifier
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="">Aucun utilisateur trouvé.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+{% endblock %}

@@ -223,6 +223,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getContractEndDate(): ?\DateTimeInterface
+    {
+        return $this->contract_end_date;
+    }
+
     public function setContractEndDate(?\DateTimeInterface $contract_end_date): static
     {
         $this->contract_end_date = $contract_end_date;

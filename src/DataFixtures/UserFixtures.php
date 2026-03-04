@@ -22,20 +22,20 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
     {
         $usersData = [
             [
-                'firstname' => 'Jean',
-                'lastname' => 'Responsable',
+                'firstname' => 'Haller',
+                'lastname' => 'Charles',
                 'email' => 'admin@devtimer.fr',
                 'password' => 'admin123',
                 'hired_date' => '2023-01-01',
                 'role_id' => 2,
-                'photo_path' => 'uploads/photos/admin.jpg',
+                'photo_path' => 'uploads/photos/haller.jpg',
                 'status' => true,
                 'contract_end_date' => null,
-                'color' => '#e74c3c',
+                'color' => '#2a7de3',
             ],
             [
                 'firstname' => 'Alice',
-                'lastname' => 'Developpeuse',
+                'lastname' => 'Dupond',
                 'email' => 'alice@devtimer.fr',
                 'password' => 'dev123',
                 'hired_date' => '2024-02-15',
