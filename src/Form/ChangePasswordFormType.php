@@ -8,6 +8,7 @@ use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\Regex;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\NotCompromisedPassword;
 use Symfony\Component\Validator\Constraints\PasswordStrength;
@@ -30,22 +31,21 @@ class ChangePasswordFormType extends AbstractType
                             message: 'Please enter a password',
                         ),
                         new Length(
-                            min: 12,
-                            minMessage: 'Your password should be at least {{ limit }} characters',
-                            // max length allowed by Symfony for security reasons
+                            min: 8,
+                            minMessage: 'Votre mot de passe doit faire au moins {{ limit }} caractères',
                             max: 4096,
                         ),
-                        new PasswordStrength(),
-                        new NotCompromisedPassword(),
+                        new Regex(
+                            pattern: '#^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*\W).+$#',
+                            message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.'
+                        ),
                     ],
-                    'label' => 'New password',
+                    'label' => 'Nouveau mot de passe',
                 ],
                 'second_options' => [
-                    'label' => 'Repeat Password',
+                    'label' => 'Répéter le mot de passe',
                 ],
-                'invalid_message' => 'The password fields must match.',
-                // Instead of being set onto the object directly,
-                // this is read and encoded in the controller
+                'invalid_message' => 'Les mots de passe doivent être identiques.',
                 'mapped' => false,
             ])
         ;
