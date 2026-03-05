@@ -1,5 +1,3 @@
-{# templates/components/_button.html.twig #}
-
 {# 1. Sécurisation des variables optionnelles #}
 {% set is_outline = outline|default(false) %}
 {% set btn_size = size|default(null) %}
@@ -18,5 +16,6 @@
 
 {% set button_variant = variants[btn_type] ?? 'btn-neutral' %}
 
-	<button class="{{ base_class }} {{ button_variant }} {{ class|default('') }}"> {{ label|default('Bouton') }}
+<button class="{{ base_class }} {{ button_variant }} {{ class|default('') }}">
+	{{ label|default('Bouton') }}
 </button>

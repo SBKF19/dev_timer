@@ -1,15 +1,13 @@
-{# templates/components/_select_multi.html.twig #}
-
 <div
 	class="inline-block w-full max-w-md" x-data="{
-		        open: false,
-		        selected: [],
-		        toggle(id, label) {
-		            const index = this.selected.findIndex(i => i.id === id);
-		            if (index > -1) { this.selected.splice(index, 1); }
-		            else { this.selected.push({id: id, label: label}); }
-		        }
-		     }" @click.away="open = false">
+						open: false,
+						selected: [],
+						toggle(id, label) {
+						const index = this.selected.findIndex(i => i.id === id);
+						if (index3> -1) { this.selected.splice(index, 1); }
+						else { this.selected.push({id: id, label: label}); }
+							}
+						}" @click.away="open = false">
 
 	{# Label #}
 	<div class="mb-1 text-[15px] font-normal text-gray-900">
