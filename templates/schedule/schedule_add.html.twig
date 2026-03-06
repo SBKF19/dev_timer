@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ajouter un horaire{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-white flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-white border border-[#E3E3E3] rounded-xl shadow-sm p-12">
+
+        <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Horaires de l'entreprise</h1>
+        <h2 class="text-[#000000] text-lg font-semibold mb-10">Ajout des horaires</h2>
+
+        <div class="fixed top-5 right-5 z-50 flex flex-col gap-2 w-full max-w-sm">
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div role="alert" class="alert {{ label == 'success' ? 'alert-success' : 'alert-error' }} shadow-lg flash-message transition-all duration-500">
+                        {% if label == 'success' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {% endif %}
+
+                        <span>{{ message }}</span>
+
+                        <div>
+                            <button onclick="this.closest('.alert').remove()" class="btn btn-sm btn-ghost btn-circle">✕</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        {{ include("form/form_schedule.html.twig") }}
+
+        <button type="submit"
+                class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none">
+            Ajouter
+        </button>
+    </div>
+    {{ form_end(scheduleForm) }}
+
+    </div>
+</div>
+{% endblock %}
