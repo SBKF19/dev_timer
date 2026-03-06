@@ -3,49 +3,60 @@
 {% block title %}Gestion des comptes utilisateur{% endblock %}
 
 {% block body %}
+{# 1. Préparer la liste des utilisateurs #}
+{% set userItems = [] %}
+{% for u in allUsers %}
+    {% set userItems = userItems|merge([{ id: u.id, label: u.lastname|upper ~ ' ' ~ u.firstname }]) %}
+{% endfor %}
+
+{# 2. Préparer la liste des statuts #}
+{% set statusItems = [
+    { id: '1', label: 'Actif' },
+    { id: '0', label: 'Inactif' }
+] %}
     <h1 class="">Gestion des comptes utilisateur</h1>
 
-    <a href="{{ path('user_add') }}" class="btn btn-bleu btn-success">
-            + Ajouter un utilisateur
-    </a>
+    {{ include('composants/button.html.twig', {type: 'confirmer', label: '+ Ajouter un utilisateur',href: path('user_add'),}) }}    
 
     <div class="card bg-light mb-4">
     <div class="card-body">
-        <form method="get" action="{{ path('user_list') }}" class="row g-3">
+        <form method="get" action="{{ path('user_list') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             
             {# Recherche textuelle #}
-            <div class="col-md-3">
-                <label for="search" class="form-label">Recherche</label>
-                <input type="text" name="search" id="search" class="form-control" 
-                       placeholder="Nom, prénom, email..." value="{{ filters.search }}">
-            </div>
+            {{ include('composants/input_text.html.twig', {
+                'label': 'Recherche',
+                'placeholder': 'Nom, prénom, email...',
+                'value': filters.search,
+                'name': 'search'
+            }) }}
 
             {# Sélecteur par Utilisateur #}
-            <div class="col-md-3">
-                <label for="user_id" class="form-label">Développeur</label>
-                <select name="user_id" id="user_id" class="form-select">
-                    <option value="">Selectioner un développeur</option>
-                    {% for u in allUsers %}
-                        <option value="{{ u.id }}" {{ filters.user_id == u.id ? 'selected' : '' }}>
-                            {{ u.lastname|upper }} {{ u.firstname }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
+            {{ include('composants/select_multi.html.twig', {
+                label: 'Développeur',
+                name: 'user_id',
+                placeholder: 'Sélectionner un développeur',
+                items: userItems,
+                multiple: false
+            }) }}
 
             {# Sélecteur Statut #}
-            <div class="col-md-3">
-                <label for="status" class="form-label">Statut</label>
-                <select name="status" id="status" class="form-select">
-                    <option value="1" {{ filters.status == '1' ? 'selected' : '' }}>Actif</option>
-                    <option value="0" {{ filters.status == '0' ? 'selected' : '' }}>Inactif</option>
-                </select>
-            </div>
+            {{ include('composants/select_multi.html.twig', {
+                label: 'Statut',
+                name: 'status',
+                placeholder: 'Tous les statuts',
+                items: statusItems,
+                multiple: false
+            }) }}
 
             {# Boutons #}
-            <div class="col-md-3 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-primary w-100">Filtrer</button>
-                <a href="{{ path('user_list') }}" class="btn btn-outline-secondary w-100">Réinitialiser</a>
+            <div class="flex gap-2">
+                {{ include('composants/button.html.twig', {type: 'filtrer', label: 'Filtrer'}) }}
+                {{ include('composants/button.html.twig', {
+                    type: 'annuler', 
+                    label: 'Réinitialiser',
+                    href: path('user_list'),
+                }) }}
+                
             </div>
 
         </form>

@@ -2,6 +2,7 @@
 {% set is_outline = outline|default(false) %}
 {% set btn_size = size|default(null) %}
 {% set btn_type = type|default('confirmer')|lower %}
+{% set href = href|default(null) %}
 
 {# 2. Construction de la classe de base #}
 {% set base_class = 'btn ' ~ (is_outline ? 'btn-outline ' : '') ~ (btn_size ? 'btn-' ~ btn_size : '') %}
@@ -15,7 +16,14 @@
 } %}
 
 {% set button_variant = variants[btn_type] ?? 'btn-neutral' %}
+{% set final_class = base_class ~ ' ' ~ button_variant ~ ' ' ~ class|default('') %}
 
-<button class="{{ base_class }} {{ button_variant }} {{ class|default('') }}">
-	{{ label|default('Bouton') }}
-</button>
+{% if href %}
+    <a href="{{ href }}" class="{{ final_class }}">
+        {{ label|default('Lien') }}
+    </a>
+{% else %}
+    <button type="submit" class="{{ final_class }}">
+        {{ label|default('Bouton') }}
+    </button>
+{% endif %}

@@ -1,53 +1,178 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Gestion des comptes utilisateur{% endblock %}
+{% block title %}{{ editMode ? 'Modifier' : 'Ajouter' }} un utilisateur{% endblock %}
 
 {% block body %}
+<div class="max-w-4xl mx-auto">
+    <header class="mb-10">
+        <h1 class="text-4xl font-extrabold text-slate-900">
+            {{ editMode ? 'Modifier un utilisateur' : 'Ajouter un utilisateur' }}
+        </h1>
+    </header>
 
-    <div class="container mt-4">
-    <h1 class="text-2xl font-bold">{{ editMode ? 'Modifier un utilisateur' : 'Ajouter un utilisateur' }}</h1>
+    <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        {{ form_start(form) }}
+        
+        {% if not form.vars.valid %}
+            <div class="alert alert-error mb-6 shadow-lg text-white">
+                {{ form_errors(form) }}
+            </div>
+        {% endif %}
 
-    {{ form_start(form) }}
-    {{ form_errors(form) }}
+        {# --- LIGNE : PRENOM & NOM --- #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div>
+                {{ include('composants/input_text.html.twig', {
+                    'label': 'Prénom',
+                    'name': form.firstname.vars.full_name,
+                    'id': form.firstname.vars.id,
+                    'value': form.firstname.vars.value,
+                    'required': true
+                }) }}
+                {% do form.firstname.setRendered %}
+            </div>
+            <div>
+                {{ include('composants/input_text.html.twig', {
+                    'label': 'Nom',
+                    'name': form.lastname.vars.full_name,
+                    'id': form.lastname.vars.id,
+                    'value': form.lastname.vars.value,
+                    'required': true
+                }) }}
+                {% do form.lastname.setRendered %}
+            </div>
+        </div>
 
-<div class="row">
-    <div class="col-md-6">
-        {{ form_row(form.firstname) }}
-    </div>
-    <div class="col-md-6">
-        {{ form_row(form.lastname) }}
-    </div>
-</div>
+        {# --- EMAIL --- #}
+        <div class="mb-8">
+            {{ include('composants/input_text.html.twig', {
+                'label': 'Adresse email',
+                'type': 'email',
+                'icon': 'fas fa-envelope',
+                'name': form.email.vars.full_name,
+                'id': form.email.vars.id,
+                'value': form.email.vars.value,
+                'required': true
+            }) }}
+            {% do form.email.setRendered %}
+        </div>
 
-{{ form_row(form.email) }}
-{% if form.password is defined %}
-    {{ form_row(form.password) }}
-{% endif %}
-{{ form_row(form.hired_date) }}
-{{ form_row(form.contract_end_date) }}
-{{ form_row(form.status) }}
-{{ form_row(form.photo) }}
-{{ form_row(form.color) }}
-{{ form_row(form.role) }}
+        {# --- PASSWORD (uniquement en création ou si spécifié) --- #}
+        {% if form.password is defined %}
+            <div class="mb-8">
+                {{ include('composants/input_text.html.twig', {
+                    'label': 'Mot de passe',
+                    'type': 'password',
+                    'icon': 'fas fa-lock',
+                    'name': form.password.vars.full_name,
+                    'id': form.password.vars.id,
+                    'required': not editMode
+                }) }}
+                {% do form.password.setRendered %}
+            </div>
+        {% endif %}
 
-<div class="mt-3 d-flex justify-content-between">
-    <a href="{{ path('user_list') }}" class="btn btn-secondary">Retour à la liste</a>
-    <button class="btn btn-primary">
-        {{ editMode ? 'Enregistrer les modifications' : 'Créer' }}
-    </button>
-</div>
+        {# --- DATE D'EMBAUCHE --- #}
+        <div class="mb-8">
+            {{ include('composants/date_picker.html.twig', {
+                'label': 'Date d\'embauche',
+                'with_time': true, 
+                'name': form.hired_date.vars.full_name,
+                'id': form.hired_date.vars.id,
+                'value': form.hired_date.vars.data ? form.hired_date.vars.data|date('Y-m-d H:i')|replace({' ': 'T'}) : '',
+                'required': true
+            }) }}
+            {% do form.hired_date.setRendered %}
+        </div>
 
-{{ form_end(form) }}
+        {# --- FIN DE CONTRAT --- #}
+        <div class="mb-8">
+            {{ include('composants/date_picker.html.twig', {
+                'label': 'Fin de contrat',
+                'with_time': true,
+                'name': form.contract_end_date.vars.full_name,
+                'id': form.contract_end_date.vars.id,
+                'value': form.contract_end_date.vars.data ? form.contract_end_date.vars.data|date('Y-m-d H:i')|replace({' ': 'T'}) : ''
+            }) }}
+            {% do form.contract_end_date.setRendered %}
+        </div>
+
+        {# --- STATUS & COULEUR --- #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-center">
+            <div>
+                {{ include('composants/switch.html.twig', {
+                    'label': 'Compte actif',
+                    'name': form.status.vars.full_name,
+                    'checked': form.status.vars.value == true
+                }) }}
+                {% do form.status.setRendered %}
+            </div>
+            <div>
+                {{ include('composants/input_color.html.twig', {
+                    'label': 'Couleur de profil',
+                    'name': form.color.vars.full_name,
+                    'id': form.color.vars.id,
+                    'value': form.color.vars.value|default('#4f46e5')
+                }) }}
+                {% do form.color.setRendered %}
+            </div>
+        </div>
+
+        {# --- PHOTO & ROLE --- #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-start">
+            {# Colonne Photo #}
+            <div>
+                {{ form_row(form.photo) }}
+            </div>
+
+            {# Colonne Rôle #}
+            <div>
+                {% set role_choices = [] %}
+                {% for choice in form.role.vars.choices %}
+                    {% set role_choices = role_choices|merge([{ id: choice.value, label: choice.label }]) %}
+                {% endfor %}
+
+                {% set initial_role = 'null' %}
+                {% if form.role.vars.data %}
+                    {% set initial_role = { id: form.role.vars.data.id, label: form.role.vars.data.label }|json_encode %}
+                {% endif %}
+
+                {{ include('composants/select_multi.html.twig', {
+                    'label': 'Rôle en entreprise',
+                    'name': form.role.vars.full_name,
+                    'placeholder': 'Choisir un rôle...',
+                    'multiple': false,
+                    'items': role_choices,
+                    'initial_value': initial_role
+                }) }}
+                {% do form.role.setRendered %}
+            </div>
+        </div>
+
+        {# --- BOUTONS D'ACTION --- #}
+        <div class="mt-10 flex justify-between items-center border-t pt-8">
+            {{ include('composants/button.html.twig', {
+                'type': 'annuler',
+                'label': 'Retour à la liste',
+                'href': path('user_list')
+            }) }}
+            {{ include('composants/button.html.twig', {
+                'type': 'confirmer',
+                'label': editMode ? 'Enregistrer les modifications' : 'Créer l\'utilisateur'
+            }) }}
+        </div>
+
+        {{ form_end(form) }}
+    </section>
 
     {% if editMode %}
-        <hr>
-        <form method="post"
-              action="{{ path('user_delete', {'id': form.vars.value.id}) }}"
-              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette utilisateur ?');">
-            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ form.vars.value.id) }}">
-            <button class="btn btn-rouge">Supprimer</button>
-        </form>
+        <div class="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 flex justify-between items-center">
+            <p class="text-red-700 font-medium">Zone de danger : supprimer cet utilisateur</p>
+            <form method="post" action="{{ path('user_delete', {'id': form.vars.value.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir archiver cet utilisateur ?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ form.vars.value.id) }}">
+                {{ include('composants/button.html.twig', { 'type': 'effacer', 'label': 'Supprimer' }) }}
+            </form>
+        </div>
     {% endif %}
 </div>
-
 {% endblock %}

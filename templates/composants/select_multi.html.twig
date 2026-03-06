@@ -1,12 +1,13 @@
-{# composants/select.html.twig #}
+{# composants/select_multi.html.twig #}
 
 {% set is_multiple = multiple|default(false) %}
+{% set default_selected = is_multiple ? '[]' : 'null' %}
 
 <div
-	class="inline-block w-full max-w-md" x-data="{
+	class="inline-block w-full max-w-md" x-data='{
 		        open: false,
-		        isMultiple: {{ is_multiple ? 'true' : 'false' }},
-		        selected: {{ is_multiple ? '[]' : 'null' }},
+		        isMultiple: {{ is_multiple ? "true" : "false" }},
+		        selected: {{ initial_value|default(default_selected)|raw }},
 		        toggle(id, label) {
 		            if (this.isMultiple) {
 		                const index = this.selected.findIndex(i => i.id === id);
@@ -26,7 +27,7 @@
 		            }
 		            return this.selected && this.selected.id === id;
 		        }
-		     }" @click.away="open = false">
+		     }' @click.away="open = false">
 
 	{# Label #}
 	<div class="mb-1 text-[15px] font-normal text-gray-900">

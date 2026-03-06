@@ -45,6 +45,7 @@ class UserType extends AbstractType
             ->add('hired_date', DateTimeType::class, [
                 'label' => 'Date d\'embauche',
                 'widget' => 'single_text', // Recommandé pour les champs HTML5
+                'html5' => true,
             ])
             ->add('photo', TextType::class, [
                 'label' => 'Photo',
@@ -55,6 +56,7 @@ class UserType extends AbstractType
                 'label' => 'Date de fin de contrat',
                 'required' => false,
                 'widget' => 'single_text',
+                'html5' => true,
             ])
             ->add('color', ColorType::class, [
                 'label' => 'Couleur associée',

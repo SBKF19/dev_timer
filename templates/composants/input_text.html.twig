@@ -1,24 +1,28 @@
-<div class="inline-block w-full max-w-sm {{ class|default('') }}">
-	{# Label avec le style "champ obligatoire" comme sur ton image #}
-	{% if label is defined %}
-		<div class="mb-1 text-[15px] font-normal text-gray-500">
-			{{ label }}
-			{% if required|default(false) %}
-				<span class="text-gray-500 font-light">
-					- champ obligatoire</span>
-			{% endif %}
-		</div>
-	{% endif %}
+<div
+    class="inline-block w-full max-w-sm {{ class|default('') }}">
+    {# Label avec ID unique pour l'accessibilité #}
+    {% if label is defined %}
+        <label for="{{ id|default(name|default('')) }}" class="block mb-1 text-[15px] font-normal text-gray-500">
+            {{ label }}
+            {% if required|default(false) %}
+                <span class="text-gray-500 font-light">
+                    
+champ obligatoire</span>{% endif %}</label>{% endif %}
 
-	<div
-		class="relative">
-		{# Optionnel : Icône à gauche (comme pour le calendrier) #}
-		{% if icon is defined %}
-			<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-700">
-				<i class="{{ icon }} h-5 w-5"></i>
-			</div>
-		{% endif %}
+    <div
+        class="relative">
+        {# Icône à gauche #}
+        {% if icon is defined %}
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-700">
+                <i class="{{ icon }} h-5 w-5"></i>
+            </div>
+        {% endif %}
 
-		<input type="{{ type|default('text') }}" placeholder="{{ placeholder|default('') }}" class="block w-full {{ icon is defined ? 'pl-10' : 'pl-4' }} pr-4 py-3 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400" {% if value is defined %} value="{{ value }}" {% endif %} {% if required|default(false) %} required {% endif %} {% if attr is defined %} {% for key, val in attr %} {{ key }}="{{ val }}" {% endfor %} {% endif %}/>
-	</div>
+        <input type="{{ type|default('text') }}" id="{{ id|default(name|default('')) }}" name="{{ name|default('') }}" placeholder="{{ placeholder|default('') }}" class="block w-full {{ icon is defined ? 'pl-10' : 'pl-4' }} pr-4 py-3 border {{ error is defined ? 'border-red-500' : 'border-black' }} rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400" value="{{ value|default('') }}" {% if required|default(false) %} required {% endif %} {% if attr is defined %} {% for key, val in attr %} {{ key }}="{{ val }}" {% endfor %} {% endif %}/>
+    </div>
+
+    {# Affichage de l'erreur #}
+    {% if error is defined %}
+        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+    {% endif %}
 </div>
