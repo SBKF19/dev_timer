@@ -1,0 +1,44 @@
+{{ form_start(scheduleForm, { attr: { id: 'schedule_form'} } ) }}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+
+        <div class="md:col-span-2">
+            {{ form_row(scheduleForm.dayOfWeek) }}
+        </div>
+
+        <div class="form-control">
+            {{ form_label(scheduleForm.startTime) }}
+            <div class="relative flex items-center">
+                <span class="absolute left-4 z-10 text-[#B4B4B4]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                {{ form_widget(scheduleForm.startTime) }}
+            </div>
+            {{ form_errors(scheduleForm.startTime) }}
+        </div>
+
+        <div class="form-control">
+            {{ form_label(scheduleForm.endTime) }}
+            <div class="relative flex items-center">
+                <span class="absolute left-4 z-10 text-[#B4B4B4]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                {{ form_widget(scheduleForm.endTime) }}
+            </div>
+            {{ form_errors(scheduleForm.endTime) }}
+        </div>
+
+    </div>
+
+    <div class="flex justify-between items-center mt-12 gap-6">
+        <a href="{{ path('app_schedule') }}"
+           class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none">
+            Retour
+        </a>
+
+
+
