@@ -78,10 +78,20 @@
                         ] %}
 
 						{{ include('composants/select_multi.html.twig', {
-                            label: 'Multi-sélection (avec tags)',
-                            name: 'demo_tags',
-                            items: items_demo
-                        }) }}
+							label: 'Développeur principal',
+							name: 'main_dev',
+							multiple: true,
+							placeholder: 'Choisir un développeur...',
+							items: items_demo
+						}) }}
+
+						{{ include('composants/select_multi.html.twig', {
+							label: 'Développeur principal',
+							name: 'main_dev',
+							multiple: false,
+							placeholder: 'Choisir un développeur...',
+							items: items_demo
+						}) }}
 					</div>
 				</div>
 			</section>

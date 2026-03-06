@@ -1,17 +1,36 @@
+{# composants/select.html.twig #}
+
+{% set is_multiple = multiple|default(false) %}
+
 <div
 	class="inline-block w-full max-w-md" x-data="{
-						open: false,
-						selected: [],
-						toggle(id, label) {
-						const index = this.selected.findIndex(i => i.id === id);
-						if (index3> -1) { this.selected.splice(index, 1); }
-						else { this.selected.push({id: id, label: label}); }
-							}
-						}" @click.away="open = false">
+		        open: false,
+		        isMultiple: {{ is_multiple ? 'true' : 'false' }},
+		        selected: {{ is_multiple ? '[]' : 'null' }},
+		        toggle(id, label) {
+		            if (this.isMultiple) {
+		                const index = this.selected.findIndex(i => i.id === id);
+		                if (index > -1) {
+		                    this.selected.splice(index, 1);
+		                } else {
+		                    this.selected.push({id: id, label: label});
+		                }
+		            } else {
+		                this.selected = {id: id, label: label};
+		                this.open = false;
+		            }
+		        },
+		        isSelected(id) {
+		            if (this.isMultiple) {
+		                return this.selected.some(i => i.id === id);
+		            }
+		            return this.selected && this.selected.id === id;
+		        }
+		     }" @click.away="open = false">
 
 	{# Label #}
 	<div class="mb-1 text-[15px] font-normal text-gray-900">
-		{{ label|default('Développeur') }}
+		{{ label|default('Sélection') }}
 		{% if required|default(false) %}
 			<span class="text-gray-500 font-light">
 				- champ obligatoire</span>
@@ -20,25 +39,37 @@
 
 	<div
 		class="relative">
-		{# Le champ principal (faisant office de bouton dropdown) #}
+		{# Le champ principal #}
 		<div
 			@click="open = !open" class="flex flex-wrap items-center gap-2 min-h-[3.5rem] w-full pl-3 pr-10 py-2 border border-black rounded-xl bg-white cursor-pointer shadow-sm">
 
-			{# Liste des Badges #}
-			<template x-for="item in selected" :key="item.id">
-				<div class="flex items-center gap-2 bg-gray-500 text-white px-3 py-1 rounded-lg text-sm transition-all hover:bg-gray-600">
-					<span x-text="item.label"></span>
-					<button type="button" @click.stop="toggle(item.id, item.label)" class="hover:text-red-300 font-bold ml-1">
-						✕
-					</button>
-					<input type="hidden" name="{{ name }}[]" :value="item.id">
+			{# --- MODE MULTIPLE : Affichage des Badges --- #}
+			<template x-if="isMultiple">
+				<div class="flex flex-wrap gap-2">
+					<template x-for="item in selected" :key="item.id">
+						<div class="flex items-center gap-2 bg-gray-500 text-white px-3 py-1 rounded-lg text-sm transition-all hover:bg-gray-600">
+							<span x-text="item.label"></span>
+							<button type="button" @click.stop="toggle(item.id, item.label)" class="hover:text-red-300 font-bold ml-1">✕</button>
+							<input type="hidden" name="{{ name }}[]" :value="item.id">
+						</div>
+					</template>
 				</div>
 			</template>
 
-			{# Placeholder si vide #}
-			<span x-show="selected.length === 0" class="text-gray-400">Ajouter un élément...</span>
+			{# --- MODE UNIQUE : Affichage du texte simple --- #}
+			<template x-if="!isMultiple">
+				<div class="w-full">
+					<span x-show="selected" x-text="selected ? selected.label : ''" class="text-gray-900 text-lg"></span>
+					<input type="hidden" name="{{ name }}" :value="selected ? selected.id : ''">
+				</div>
+			</template>
 
-			{# Petite flèche à droite #}
+			{# Placeholder si rien n'est sélectionné #}
+			<span x-show="isMultiple ? selected.length === 0 : !selected" class="text-gray-400">
+				{{ placeholder|default('Ajouter un élément...') }}
+			</span>
+
+			{# Flèche #}
 			<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" viewbox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -46,14 +77,20 @@
 			</div>
 		</div>
 
-		{# Le menu de sélection (Dropdown) #}
+		{# Menu Déroulant #}
 		<div x-show="open" x-transition class="absolute z-[110] w-full mt-2 p-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
 			<ul class="menu p-0">
 				{% for item in items %}
 					<li class="rounded-lg overflow-hidden">
-						<label class="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer">
-							<input type="checkbox" @change="toggle('{{ item.id }}', '{{ item.label }}')" :checked="selected.some(i => i.id === '{{ item.id }}')" class="checkbox checkbox-primary checkbox-md rounded-full border-gray-300">
-							<span class="text-gray-800 font-medium">{{ item.label }}</span>
+						<label
+							class="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer">
+							{# Checkbox pour multiple, rien pour unique (le clic suffit) #}
+							{% if is_multiple %}
+								<input type="checkbox" @change="toggle('{{ item.id }}', '{{ item.label }}')" :checked="isSelected('{{ item.id }}')" class="checkbox checkbox-primary checkbox-md rounded-full border-gray-300">
+							{% else %}
+								<input type="radio" @click="toggle('{{ item.id }}', '{{ item.label }}')" :checked="isSelected('{{ item.id }}')" class="radio radio-primary radio-sm">
+							{% endif %}
+							<span class="text-gray-800 font-medium" @click="!isMultiple ? toggle('{{ item.id }}', '{{ item.label }}') : null">{{ item.label }}</span>
 						</label>
 					</li>
 				{% endfor %}
