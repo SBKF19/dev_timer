@@ -1,27 +1,129 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Dev Timer
+{% block title %}Design System - Dev Timer
 {% endblock %}
 
 {% block body %}
-	<div class="flex flex-col items-center justify-center min-h-screen gap-4 bg-base-200">
-		<h1 class="text-4xl font-bold">Dev Timer</h1>
+<div
+	class="flex min-h-screen bg-[#f8fafc]">
 
-		<div class="grid grid-flow-col gap-5 text-center auto-cols-max">
-			<div class="flex flex-col p-2 bg-neutral rounded-box text-neutral-content">
-				<span class="countdown font-mono text-5xl">
-					<span style="--value:10;"></span>
-				</span>
-				min
-			</div>
-			<div class="flex flex-col p-2 bg-neutral rounded-box text-neutral-content">
-				<span class="countdown font-mono text-5xl">
-					<span style="--value:24;"></span>
-				</span>
-				sec
-			</div>
-		</div>
-
-		<button class="btn btn-primary">Start Timer</button>
+	{# La Sidebar reste identique #}
+	<div class="w-72 sticky top-0 h-screen">
+		{{ include('composants/sidebar.html.twig', {
+            active_menu: 'accueil'
+        }) }}
 	</div>
+
+	<main class="flex-1 p-10 overflow-y-auto">
+		<div class="max-w-6xl mx-auto flex flex-col gap-12">
+
+			<header>
+				<h1 class="text-4xl font-extrabold text-slate-900">Design System</h1>
+				<p class="text-slate-500 mt-2">Aperçu de tous les composants et leurs variantes.</p>
+			</header>
+
+			{# --- SECTION 1 : BOUTONS --- #}
+			<section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+				<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Variantes de Boutons</h2>
+				<div class="flex flex-wrap gap-4">
+					{{ include('composants/button.html.twig', {type: 'confirmer', label: 'Confirmer (Bleu)'}) }}
+					{{ include('composants/button.html.twig', {type: 'effacer', label: 'Effacer (Rouge)'}) }}
+					{{ include('composants/button.html.twig', {type: 'filtrer', label: 'Filtrer (Jaune)'}) }}
+					{{ include('composants/button.html.twig', {type: 'annuler', label: 'Annuler (Gris)'}) }}
+				</div>
+			</section>
+
+			{# --- SECTION 2 : SAISIE DE TEXTE --- #}
+			<section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+				<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Champs de Saisie</h2>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+					{{ include('composants/input_text.html.twig', {
+                            label: 'Texte classique',
+                            placeholder: 'Entrez du texte...'
+                        }) }}
+					{{ include('composants/input_text.html.twig', {
+                            label: 'Champ Obligatoire',
+                            required: true,
+                            placeholder: 'Ce champ est requis'
+                        }) }}
+					{{ include('composants/input_text.html.twig', {
+                            label: 'Type Email',
+                            type: 'email',
+                            placeholder: 'contact@ec2e.fr'
+                        }) }}
+					{{ include('composants/input_text.html.twig', {
+                            label: 'Avec Valeur par défaut',
+                            value: 'Contenu pré-rempli'
+                        }) }}
+				</div>
+			</section>
+
+			{# --- SECTION 3 : DATES & SÉLECTION --- #}
+			<section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+				<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Dates & Sélections Multiples</h2>
+				<div class="space-y-8">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+						{{ include('composants/date_picker.html.twig', {
+                                label: 'Date et Heure',
+                                with_time: true,
+                                value: '2025-11-25T08:30'
+                            }) }}
+
+
+						{% set items_demo = [
+                            {'id': 1, 'label': 'Développement PHP'},
+                            {'id': 2, 'label': 'Design Figma'},
+                            {'id': 3, 'label': 'Réunion client'},
+                            {'id': 4, 'label': 'Support Technique'}
+                        ] %}
+
+						{{ include('composants/select_multi.html.twig', {
+							label: 'Développeur principal',
+							name: 'main_dev',
+							multiple: true,
+							placeholder: 'Choisir un développeur...',
+							items: items_demo
+						}) }}
+
+						{{ include('composants/select_multi.html.twig', {
+							label: 'Développeur principal',
+							name: 'main_dev',
+							multiple: false,
+							placeholder: 'Choisir un développeur...',
+							items: items_demo
+						}) }}
+					</div>
+				</div>
+			</section>
+
+			{# --- SECTION 4 : SWITCHES --- #}
+			<section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+				<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Interrupteurs (Switches)</h2>
+				<div class="flex flex-col gap-4">
+					{{ include('composants/switch.html.twig', {label: 'Option activée', name: 'opt1', checked: true}) }}
+					{{ include('composants/switch.html.twig', {label: 'Option désactivée', name: 'opt2', checked: false}) }}
+				</div>
+			</section>
+
+			{# --- SECTION 5 : TABLEAUX --- #}
+			<section>
+				<h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Visualisation de Données</h2>
+				<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+					{% set col_demo = ['ID', 'Utilisateur', 'Rôle', 'Dernière Connexion', 'Status'] %}
+					{% set row_demo = [
+                            ['#001', 'Mikaël Idasiak', 'Manager', 'Hier, 14:20', '<span class="badge badge-success text-white font-medium">Actif</span>'],
+                            ['#002', 'Charles Haller', 'Développeur', 'Aujourd\'hui, 09:15', '<span class="badge badge-warning text-white font-medium">En pause</span>'],
+                            ['#003', 'John Doe', 'Développeur', 'Il y a 3 jours', '<span class="badge badge-ghost font-medium">Inactif</span>']
+                        ] %}
+
+                        {{ include('composants/table.html.twig', {
+                            columns: col_demo,
+                            data: row_demo
+                        }) }}
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
 {% endblock %}

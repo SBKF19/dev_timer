@@ -1,0 +1,60 @@
+<aside
+	class="w-72 h-screen bg-white border-r border-gray-200 flex flex-col p-6 shadow-sm">
+	{# Logo #}
+	<div class="mb-10 px-2">
+		<img src="{{ asset('images/logo_ec2e.png') }}" alt="EC2E Logo" class="w-full max-w-[180px]">
+	</div>
+
+	{# Navigation #}
+	<nav class="flex-1 space-y-2">
+		{# Liens communs #}
+		{# à la place de test mettre path('route name du controller') #}
+		{{ _self.nav_item('test', 'Accueil', 'grid-view', active_menu == 'accueil') }}
+		{{ _self.nav_item('test', 'Projets', 'folder', active_menu == 'projets') }}
+		{{ _self.nav_item('test', 'Saisie des heures', 'timer', active_menu == 'timer') }}
+		{{ _self.nav_item('test', 'Reporting Global', 'chart', active_menu == 'reporting') }}
+
+		<hr
+		class="my-4 border-gray-100"> {# Liens réservés aux MANAGERS #}
+		{% if is_granted('ROLE_MANAGER') %}
+			<div class="text-xs font-semibold text-gray-400 uppercase px-4 mb-2">Administration</div>
+			{{ _self.nav_item('test', 'Gestion des comptes', 'users') }}
+			{{ _self.nav_item('test', 'Horaires', 'clock') }}
+			{{ _self.nav_item('test', 'Rappel email', 'bell') }}
+			{{ _self.nav_item('test', 'Jours fériés', 'calendar') }}
+			{{ _self.nav_item('test', 'Corrections', 'check-circle') }}
+		{% endif %}
+	</nav>
+
+	{# Profil Utilisateur (En bas) #}
+	<div class="mt-auto pt-6 border-t border-gray-100">
+		<div class="flex items-center gap-3 px-2 cursor-pointer group">
+			<div class="avatar">
+				<div class="w-12 rounded-full ring ring-offset-2 ring-gray-100">
+					<img src="{{ app.user.avatarUrl|default(asset('images/default_avatar.jpg')) }}"/>
+				</div>
+			</div>
+			<div class="flex flex-col">
+				<div class="flex items-center gap-1 font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+					{{ app.user.fullName|default('Utilisateur') }}
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewbox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+					</svg>
+				</div>
+				<span class="text-xs text-gray-500">{{ is_granted('ROLE_MANAGER') ? 'Manager' : 'Développeur' }}</span>
+			</div>
+		</div>
+	</div>
+</aside>
+
+{# Macro pour générer les items de menu facilement #}
+{% macro nav_item(url, label, icon, is_active) %}
+	<a
+		href="{{ url }}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all font-medium
+																			{{ is_active ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+
+		{# Ton icône ici #}
+		<img src="test.png">
+		<span class="text-[15px]">{{ label }}</span>
+	</a>
+{% endmacro %}
