@@ -1,0 +1,24 @@
+<div
+	class="inline-block w-full max-w-sm {{ class|default('') }}">
+	{# Label : On force le texte en noir pour qu'il soit lisible sur ton fond #}
+	<div class="mb-1 text-[15px] font-normal text-gray-500">
+		{{ label|default('Date de début') }}
+		{% if required|default(false) %}
+			<span class="text-gray-500 font-light">
+				- champ obligatoire</span>
+		{% endif %}
+	</div>
+
+	<div
+		class="relative">
+		{# L'icône calendrier placée à gauche comme sur ton modèle #}
+		<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-800" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+			</svg>
+		</div>
+
+		{# L'input : bg-white obligatoire, border noir fin, et pl-12 pour laisser place à l'icône #}
+		<input type="{{ with_time|default(true) ? 'datetime-local' : 'date' }}" class="block w-full pl-12 pr-3 py-3 border border-black rounded-xl bg-white text-gray-500 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" {% if value is defined %} value="{{ value }}" {% endif %}/>
+	</div>
+</div>
