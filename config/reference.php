@@ -149,6 +149,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     },
  *     form?: bool|array{ // Form configuration
  *         enabled?: bool|Param, // Default: true
+ *         enabled?: bool|Param, // Default: true
  *         csrf_protection?: bool|array{
  *             enabled?: scalar|Param|null, // Default: null
  *             token_id?: scalar|Param|null, // Default: null
@@ -466,6 +467,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     disallow_search_engine_index?: bool|Param, // Enabled by default when debug is enabled. // Default: true
  *     http_client?: bool|array{ // HTTP Client configuration
  *         enabled?: bool|Param, // Default: true
+ *         enabled?: bool|Param, // Default: true
  *         max_host_connections?: int|Param, // The maximum number of connections to a single host.
  *         default_options?: array{
  *             headers?: array<string, mixed>,
@@ -569,6 +571,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         }>,
  *     },
  *     mailer?: bool|array{ // Mailer configuration
+ *         enabled?: bool|Param, // Default: true
  *         enabled?: bool|Param, // Default: true
  *         message_bus?: scalar|Param|null, // The message bus to use. Defaults to the default bus if the Messenger component is installed. // Default: null
  *         dsn?: scalar|Param|null, // Default: null
