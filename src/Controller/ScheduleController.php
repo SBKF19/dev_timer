@@ -71,8 +71,7 @@ final class ScheduleController extends AbstractController
                     $entityManager->persist($schedule);
                     $entityManager->flush();
                     $this->addFlash('success', 'Créneau horaire ajouté avec succès !');
-                    $schedule = new Schedule();
-                    $form = $this->createForm(ScheduleForm::class, $schedule);
+                    return $this->redirectToRoute('app_schedule');
 
 
                 }
@@ -127,8 +126,14 @@ final class ScheduleController extends AbstractController
     }
 
     #[Route('/schedule/delete/{id}', name: 'app_schedule_delete', methods: ['POST'])]
-    public function delete(Request $request, Schedule $schedule, EntityManagerInterface $entityManager): Response
+    public function delete( int $id,Request $request, EntityManagerInterface $entityManager, ScheduleRepository $scheduleRepository): Response
     {
+        $schedule = $scheduleRepository->find($id);
+        if (!$schedule) {
+            $this->addFlash('error', 'Créneau introuvable.');
+            return $this->redirectToRoute('app_schedule');
+        }
+
         if ($this->isCsrfTokenValid('delete_schedule', $request->request->get('_token'))) {
             $entityManager->remove($schedule);
             $entityManager->flush();

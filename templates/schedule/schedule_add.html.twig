@@ -29,14 +29,23 @@
             {% endfor %}
         </div>
 
-        {{ include("form/form_schedule.html.twig") }}
+         {{ form_start(scheduleForm, { attr: { id: 'schedule_form_add'} }) }}
+            {{ include("form/form_schedule.html.twig") }}
+        {{ form_end(scheduleForm) }}
 
-        <button type="submit"
-                class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none">
-            Ajouter
-        </button>
-    </div>
-    {{ form_end(scheduleForm) }}
+        <div class="flex flex-row justify-between items-center mt-12 gap-6">
+
+            <a href="{{ path('app_schedule') }}"
+               class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none flex items-center justify-center">
+                Retour
+            </a>
+
+            <button type="submit" form="schedule_form_add"
+                    class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case text-base font-medium">
+                Ajouter
+            </button>
+
+        </div>
 
     </div>
 </div>
