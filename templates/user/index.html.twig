@@ -22,9 +22,9 @@
 
             {# Sélecteur par Utilisateur #}
             <div class="col-md-3">
-                <label for="user_id" class="form-label">Utilisateur précis</label>
+                <label for="user_id" class="form-label">Développeur</label>
                 <select name="user_id" id="user_id" class="form-select">
-                    <option value="">Tous les utilisateurs</option>
+                    <option value="">Selectioner un développeur</option>
                     {% for u in allUsers %}
                         <option value="{{ u.id }}" {{ filters.user_id == u.id ? 'selected' : '' }}>
                             {{ u.lastname|upper }} {{ u.firstname }}
@@ -37,7 +37,6 @@
             <div class="col-md-3">
                 <label for="status" class="form-label">Statut</label>
                 <select name="status" id="status" class="form-select">
-                    <option value="">Tous</option>
                     <option value="1" {{ filters.status == '1' ? 'selected' : '' }}>Actif</option>
                     <option value="0" {{ filters.status == '0' ? 'selected' : '' }}>Inactif</option>
                 </select>
@@ -70,20 +69,32 @@
             </thead>
             <tbody>
                 {% for user in users %}
-                    <tr>
-                        <td>{{ user.firstname }}</td>
+                    <tr>                        
                         <td>{{ user.lastname }}</td>
+                        <td>{{ user.firstname }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : 'Jamais' }}</td>
-                        <td>{{ user.status }}</td>
+                        <td>{{ user.status ? 'Actif' : 'Inactif' }}</td>
                         <td>{{ user.role.label ?? 'Aucun' }}</td>
                         <td>{{ user.hiredDate ? user.hiredDate|date('d/m/Y') : '' }}</td>
                         <td>{{ user.contractEndDate ? user.contractEndDate|date('d/m/Y') : 'non définis' }}</td>
                         <td style= "color :{{ user.color }} ">{{ user.color }}</td>
                         <td>
-                            <a href="{{ path('user_edit', {'id': user.id}) }}" class="">
-                            Modifier
-                            </a>
+                            <div class="d-flex gap-2">
+                                <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-sm btn-outline-primary">
+                                    Modifier
+                                </a>
+                                <form method="post" 
+                                    action="{{ path('user_delete', {'id': user.id}) }}" 
+                                    onsubmit="return confirm('Êtes-vous sûr de vouloir archiver cet utilisateur ?');"
+                                    style="display:inline;">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                                    
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 {% else %}

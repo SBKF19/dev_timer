@@ -11,10 +11,13 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
+
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -44,6 +47,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?bool $status = true;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[Assert\GreaterThan(
+        propertyPath: 'hired_date',
+        message: 'La date d’embauche doit être antérieur à la date de fin de contrat. '
+    )]
     private ?\DateTimeInterface $contract_end_date = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -98,7 +105,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // On initialise souvent la date de création par défaut
         $this->create_at = new \DateTime();
     }
-
+    /*
+    //Validation
+    #[Assert\Callback]
+    public function validateDates(ExecutionContextInterface $context): void
+    {
+        if ($this->contract_end_date && $this->hired_date > $this->contract_end_date) {
+            $context->buildViolation('La date d’embauche doit être avant la date de fin de contrat.')
+                ->atPath('contract_end_date')
+                ->addViolation();
+        }
+    }
+    */
     // --- GESTION DES COLLECTIONS ---
 
     /** @return Collection<int, Project> */

@@ -55,7 +55,7 @@ class UserController extends AbstractController
         return $this->render('user/form.html.twig', [
             'form' => $form->createView(),
             'editMode' => false,
-        ]);
+        ], new Response(null, $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
     
     #[Route('/edit/{id}', name: 'edit')]
@@ -75,6 +75,27 @@ class UserController extends AbstractController
         return $this->render('user/form.html.twig', [
             'form' => $form->createView(),
             'editMode' => true,
-        ]);
+        ], new Response(null, $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
+    }
+
+
+    #[Route('/delete/{id}', name: 'delete', methods: ['POST'])]
+    public function delete(User $user, Request $request, UserRepository $userRepository): Response
+    {
+        // On vérifie le jeton CSRF pour la sécurité
+        $token = $request->request->get('_token');
+    
+        if ($this->isCsrfTokenValid('delete' . $user->getId(), $token)) {
+            
+            $user->setDeletedAt(new \DateTime());
+        
+            $user->setStatus(false);
+
+            $userRepository->save($user, true);
+
+            $this->addFlash('success', 'Utilisateur supprimé (archivé) avec succès.');
+        }
+
+        return $this->redirectToRoute('user_list');
     }
 }

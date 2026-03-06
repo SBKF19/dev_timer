@@ -19,39 +19,52 @@ class UserType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder
+        $user = $options['data'] ?? null;
+        $isEdit = $user && $user->getId() !== null;
+        
+       $builder
             ->add('email', TextType::class, [
                 'label' => 'Email',
             ])
             ->add('firstname', TextType::class, [
-                'label' => 'Nom',
+                'label' => 'Prénom', // Correction : c'était 'Nom' dans ton code
             ])
             ->add('lastname', TextType::class, [
-                'label' => 'Prénom',
-            ])
-            ->add('password', PasswordType::class, [
+                'label' => 'Nom', // Correction : c'était 'Prénom' dans ton code
+            ]);
+
+        // 3. On n'ajoute le champ password que si on n'est PAS en édition
+        if (!$isEdit) {
+            $builder->add('password', PasswordType::class, [
                 'label' => 'Mot de passe temporaire',
-            ])
+                'required' => true,
+            ]);
+        }
+
+        $builder
             ->add('hired_date', DateTimeType::class, [
                 'label' => 'Date d\'embauche',
+                'widget' => 'single_text', // Recommandé pour les champs HTML5
             ])
             ->add('photo', TextType::class, [
                 'label' => 'Photo',
+                'required' => false,
             ])
             ->add('status')
             ->add('contract_end_date', DateTimeType::class, [
                 'label' => 'Date de fin de contrat',
+                'required' => false,
+                'widget' => 'single_text',
             ])
             ->add('color', ColorType::class, [
-                'label' => 'couleur associée',
+                'label' => 'Couleur associée',
             ])
             ->add('role', EntityType::class, [
                 'label' => 'Rôle',
                 'class' => Role::class,
                 'choice_label' => 'label',
                 'placeholder' => 'Choisissez un rôle',
-            ])
-        ;
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

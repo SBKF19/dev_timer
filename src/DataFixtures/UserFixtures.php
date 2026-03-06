@@ -22,8 +22,8 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
     {
         $usersData = [
             [
-                'firstname' => 'Haller',
-                'lastname' => 'Charles',
+                'firstname' => 'Charles',
+                'lastname' => 'Haller',
                 'email' => 'admin@devtimer.fr',
                 'password' => 'admin123',
                 'hired_date' => '2023-01-01',

@@ -5,9 +5,10 @@
 {% block body %}
 
     <div class="container mt-4">
-    <h1>{{ editMode ? 'Modifier un utilisateur' : 'Ajouter un utilisateur' }}</h1>
+    <h1 class="text-2xl font-bold">{{ editMode ? 'Modifier un utilisateur' : 'Ajouter un utilisateur' }}</h1>
 
     {{ form_start(form) }}
+    {{ form_errors(form) }}
 
 <div class="row">
     <div class="col-md-6">
@@ -19,7 +20,9 @@
 </div>
 
 {{ form_row(form.email) }}
-{{ form_row(form.password) }}
+{% if form.password is defined %}
+    {{ form_row(form.password) }}
+{% endif %}
 {{ form_row(form.hired_date) }}
 {{ form_row(form.contract_end_date) }}
 {{ form_row(form.status) }}
@@ -39,7 +42,7 @@
     {% if editMode %}
         <hr>
         <form method="post"
-              action="{{ path('user_list', {'id': form.vars.value.id}) }}"
+              action="{{ path('user_delete', {'id': form.vars.value.id}) }}"
               onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette utilisateur ?');">
             <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ form.vars.value.id) }}">
             <button class="btn btn-rouge">Supprimer</button>
