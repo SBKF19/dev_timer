@@ -19,11 +19,11 @@
 {% set final_class = base_class ~ ' ' ~ button_variant ~ ' ' ~ class|default('') %}
 
 {% if href %}
-	<a href="{{ href }}" class="{{ final_class }}">
-		{{ label|default('Lien') }}
-	</a>
+    <a href="{{ href }}" class="{{ final_class }}">
+        {{ label|default('Lien') }}
+    </a>
 {% else %}
-	<button type="submit" class="{{ final_class }}">
-		{{ label|default('Bouton') }}
-	</button>
+    <button type="submit" class="{{ final_class }}">
+        {{ label|default('Bouton') }}
+    </button>
 {% endif %}
