@@ -1,13 +1,15 @@
 <div
-    class="inline-block w-full max-w-sm {{ class|default('') }}">
-    {# Label avec ID unique pour l'accessibilité #}
-    {% if label is defined %}
-        <label for="{{ id|default(name|default('')) }}" class="block mb-1 text-[15px] font-normal text-gray-500">
-            {{ label }}
-            {% if required|default(false) %}
-                <span class="text-gray-500 font-light">
-                    
-champ obligatoire</span>{% endif %}</label>{% endif %}
+	class="inline-block w-full max-w-sm {{ class|default('') }}">
+	{# Label avec le style "champ obligatoire" comme sur ton image #}
+	{% if label is defined %}
+		<div class="mb-1 text-[15px] font-normal text-gray-500">
+			{{ label }}
+			{% if required|default(false) %}
+				<span class="text-gray-500 font-light">
+					- champ obligatoire</span>
+			{% endif %}
+		</div>
+	{% endif %}
 
     <div
         class="relative">
