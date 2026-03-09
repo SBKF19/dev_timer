@@ -52,6 +52,7 @@
                 'name': form.email.vars.full_name,
                 'id': form.email.vars.id,
                 'value': form.email.vars.value,
+                'errors': form.email.vars.errors,
                 'required': true
             }) }}
             {% do form.email.setRendered %}
@@ -122,7 +123,14 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-start">
             {# Colonne Photo #}
             <div>
-                {{ form_row(form.photo) }}
+                {{ include('composants/input_text.html.twig', {
+                    'label': 'Photo',
+                    'name': form.photo.vars.full_name,
+                    'id': form.photo.vars.id,
+                    'value': form.photo.vars.value,
+                    'required': true
+                }) }}
+                {% do form.photo.setRendered %}
             </div>
 
             {# Colonne Rôle #}
@@ -167,7 +175,7 @@
 
     {% if editMode %}
         <div class="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 flex justify-between items-center">
-            <p class="text-red-700 font-medium">Zone de danger : supprimer cet utilisateur</p>
+            <p class="text-red-700 font-medium">Supprimer cet utilisateur</p>
             <form method="post" action="{{ path('user_delete', {'id': form.vars.value.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir archiver cet utilisateur ?');">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ form.vars.value.id) }}">
                 {{ include('composants/button.html.twig', { 'type': 'effacer', 'label': 'Supprimer' }) }}
