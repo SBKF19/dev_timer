@@ -23,6 +23,9 @@ class Schedule
     #[ORM\Column]
     private ?int $dayOfWeek = null;
 
+    #[ORM\Column(length: 25)]
+    private ?string $period = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -67,6 +70,18 @@ class Schedule
     public function setDayOfWeek(int $dayOfWeek): static
     {
         $this->dayOfWeek = $dayOfWeek;
+
+        return $this;
+    }
+
+    public function getPeriod(): ?string
+    {
+        return $this->period;
+    }
+
+    public function setPeriod(string $period): static
+    {
+        $this->period = $period;
 
         return $this;
     }

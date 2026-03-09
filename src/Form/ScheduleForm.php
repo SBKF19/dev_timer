@@ -30,6 +30,21 @@ class ScheduleForm extends AbstractType
                     new NotBlank(message: 'Le jour de la semaine est obligatoire.'),
                 ]
             ])
+
+            ->add('period', ChoiceType::class, [
+                'label' => 'Période - champ obligatoire',
+                'choices'  => [
+                    'Matin' => 'Matin',
+                    'Après-midi' => 'Après-midi'
+                ],
+                'placeholder' => 'Sélectionnez une période',
+                'attr' => ['class' => 'select ' . $inputBaseClass],
+                'label_attr' => ['class' => $labelBaseClass],
+                'constraints' => [
+                    new NotBlank(message: 'La période est obligatoire.'),
+                ]
+            ])
+
             ->add('startTime', TimeType::class, [
                 'label' => 'Heure de début - champ obligatoire',
                 'widget' => 'single_text',
