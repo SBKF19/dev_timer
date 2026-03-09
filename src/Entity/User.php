@@ -35,7 +35,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTimeInterface $hired_date = null;
+    private ?DateTimeInterface $hired_date = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photo = null;
@@ -44,19 +44,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?bool $status = true;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $contract_end_date = null;
+    private ?DateTimeInterface $contract_end_date = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $create_at = null;
+    private ?DateTimeInterface $create_at = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $last_login = null;
+    private ?DateTimeInterface $last_login = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $color = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $deleted_at = null;
+    private ?DateTimeInterface $deleted_at = null;
 
     #[ORM\ManyToOne(inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: false)]
@@ -183,11 +183,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getHiredDate(): ?\DateTimeInterface
+    public function getHiredDate(): ?DateTimeInterface
     {
         return $this->hired_date;
     }
-    public function setHiredDate(\DateTimeInterface $hired_date): static
+    public function setHiredDate(DateTimeInterface $hired_date): static
     {
         $this->hired_date = $hired_date;
         return $this;
@@ -223,29 +223,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function setContractEndDate(?\DateTimeInterface $contract_end_date): static
+    public function setContractEndDate(?DateTimeInterface $contract_end_date): static
     {
         $this->contract_end_date = $contract_end_date;
         return $this;
     }
 
-    public function getCreateAt(): ?\DateTimeInterface
+    public function getCreateAt(): ?DateTimeInterface
     {
         return $this->create_at;
     }
 
-    public function setCreateAt(\DateTimeInterface $create_at): static
+    public function setCreateAt(DateTimeInterface $create_at): static
     {
         $this->create_at = $create_at;
         return $this;
     }
 
-    public function getLastLogin(): ?\DateTimeInterface
+    public function getLastLogin(): ?DateTimeInterface
     {
         return $this->last_login;
     }
 
-    public function setLastLogin(?\DateTimeInterface $last_login): static
+    public function setLastLogin(?DateTimeInterface $last_login): static
     {
         $this->last_login = $last_login;
         return $this;
@@ -262,21 +262,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getDeletedAt(): ?\DateTimeInterface
+    public function getDeletedAt(): ?DateTimeInterface
     {
         return $this->deleted_at;
     }
 
-    public function setDeletedAt(?\DateTimeInterface $deleted_at): static
+    public function setDeletedAt(?DateTimeInterface $deleted_at): static
     {
         $this->deleted_at = $deleted_at;
         return $this;
     }
 
 
+    // src/Entity/User.php
+
+    // src/Entity/User.php
+
+    // src/Entity/User.php
+
     public function getRoles(): array
     {
-        return ['ROLE_USER'];
+        $roles = ['ROLE_USER']; // Rôle de base pour tout le monde
+
+        if ($this->role && $this->role->getLabel()) {
+            // On transforme "Responsable" en "ROLE_RESPONSABLE"
+            // strtoupper met en majuscules, str_replace remplace les espaces par des underscores
+            $label = strtoupper($this->role->getLabel());
+            $roles[] = 'ROLE_' . str_replace(' ', '_', $label);
+        }
+
+        return array_unique($roles);
     }
 
     public function getUserIdentifier(): string

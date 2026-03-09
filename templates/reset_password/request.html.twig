@@ -4,22 +4,42 @@
 {% endblock %}
 
 {% block body %}
-	<div class="flex flex-col items-center justify-center min-h-screen gap-4 text-black">
+	<div class="flex flex-col justify-center min-h-screen gap-4 text-black">
 		{% for flash_error in app.flashes('reset_password_error') %}
 			<div class="alert alert-danger" role="alert">{{ flash_error }}</div>
 		{% endfor %}
-		<h1>Reset your password</h1>
+		<h1>Mot de passe oublié</h1>
 
-		{{ form_start(requestForm) }}
-		{{ form_row(requestForm.email) }}
-		<div>
-			<small>
-				Enter your email address, and we will send you a
-								                link to reset your password.
-			</small>
+		{{ form_start(requestForm, {'attr': {'class': 'flex flex-col w-full max-w-md'}}) }}
+		{{ include('composants/input_text.html.twig', {
+			'label': 'Votre adresse email',
+			'required': true,
+			'icon': 'fas fa-envelope',
+			'placeholder': 'nom@exemple.fr',
+			'attr': {
+				'name': requestForm.email.vars.full_name,
+				'id': requestForm.email.vars.id,
+				'value': requestForm.email.vars.value
+		}}) }}
+		{% do requestForm.email.setRendered %}
+
+		<div class="flex flex-row w-full gap-4 mt-6">
+			<div class="flex-1">
+				{{ include('composants/button.html.twig', {
+            type: 'annuler', 
+            label: 'Retour', 
+            href: path('app_login'),
+            class: 'w-full' 
+        }) }}
+			</div>
+			<div class="flex-1">
+				{{ include('composants/button.html.twig', {
+            type: 'confirmer', 
+            label: 'Envoyer',
+            class: 'w-full'
+        }) }}
+			</div>
 		</div>
-
-		<button class="btn btn-primary">Send password reset email</button>
 		{{ form_end(requestForm) }}
 	</div>
 {% endblock %}
