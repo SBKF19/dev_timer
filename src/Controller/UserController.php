@@ -23,16 +23,21 @@ class UserController extends AbstractController
             'user_id' => $request->query->get('user_id'),
         ];
 
+        $sort = $request->query->get('sort', 'lastname');
+        $direction = $request->query->get('direction', 'ASC');
+
         if (!empty($filters['user_id'])) {
             $users = [$userRepository->find($filters['user_id'])];
         } else {
-            $users = $userRepository->findByFilters($filters);
+            $users = $userRepository->findByFilters($filters, $sort, $direction);
         }
         
         return $this->render('user/index.html.twig', [
             'users' => $users,
             'allUsers' => $userRepository->findBy([], ['lastname' => 'ASC']),
-            'filters' => $filters
+            'filters' => $filters,
+            'currentSort' => $sort,
+            'currentDirection' => $direction
         ]);        
     }
 

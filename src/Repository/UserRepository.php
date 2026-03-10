@@ -21,7 +21,7 @@ class UserRepository extends ServiceEntityRepository
      * @param array $filters Tableau contenant les critères
      * @return User[]
      */
-    public function findByFilters(array $filters): array
+    public function findByFilters(array $filters, string $sort = 'lastname', string $direction = 'ASC'): array
     {
         $qb = $this->createQueryBuilder('u')
             ->leftJoin('u.role', 'r') // Utile si on veut filtrer par nom de rôle
@@ -48,7 +48,8 @@ class UserRepository extends ServiceEntityRepository
         // Exclure les utilisateurs supprimés (Soft Delete)
         $qb->andWhere('u.deleted_at IS NULL');
 
-        $qb->orderBy('u.lastname', 'ASC');
+        $sortField = strpos($sort, '.') === false ? 'u.' . $sort : $sort;
+        $qb->orderBy($sortField, $direction);
 
         return $qb->getQuery()->getResult();
     }

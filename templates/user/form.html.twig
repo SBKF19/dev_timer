@@ -13,11 +13,7 @@
     <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
         {{ form_start(form) }}
         
-        {% if not form.vars.valid %}
-            <div class="alert alert-error mb-6 shadow-lg text-white">
-                {{ form_errors(form) }}
-            </div>
-        {% endif %}
+       
 
         {# --- LIGNE : PRENOM & NOM --- #}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -27,6 +23,7 @@
                     'name': form.firstname.vars.full_name,
                     'id': form.firstname.vars.id,
                     'value': form.firstname.vars.value,
+                    'error': form.firstname.vars.errors,
                     'required': true
                 }) }}
                 {% do form.firstname.setRendered %}
@@ -37,6 +34,7 @@
                     'name': form.lastname.vars.full_name,
                     'id': form.lastname.vars.id,
                     'value': form.lastname.vars.value,
+                    'error': form.lastname.vars.errors,
                     'required': true
                 }) }}
                 {% do form.lastname.setRendered %}
@@ -52,7 +50,7 @@
                 'name': form.email.vars.full_name,
                 'id': form.email.vars.id,
                 'value': form.email.vars.value,
-                'errors': form.email.vars.errors,
+                'error': form.email.vars.errors,
                 'required': true
             }) }}
             {% do form.email.setRendered %}
@@ -67,6 +65,7 @@
                     'icon': 'fas fa-lock',
                     'name': form.password.vars.full_name,
                     'id': form.password.vars.id,
+                    'error': form.password.vars.errors,
                     'required': not editMode
                 }) }}
                 {% do form.password.setRendered %}
@@ -81,6 +80,7 @@
                 'name': form.hired_date.vars.full_name,
                 'id': form.hired_date.vars.id,
                 'value': form.hired_date.vars.data ? form.hired_date.vars.data|date('Y-m-d H:i')|replace({' ': 'T'}) : '',
+                'error': form.hired_date.vars.errors,
                 'required': true
             }) }}
             {% do form.hired_date.setRendered %}
@@ -93,7 +93,8 @@
                 'with_time': true,
                 'name': form.contract_end_date.vars.full_name,
                 'id': form.contract_end_date.vars.id,
-                'value': form.contract_end_date.vars.data ? form.contract_end_date.vars.data|date('Y-m-d H:i')|replace({' ': 'T'}) : ''
+                'value': form.contract_end_date.vars.data ? form.contract_end_date.vars.data|date('Y-m-d H:i')|replace({' ': 'T'}) : '',
+                'error': form.contract_end_date.vars.errors,
             }) }}
             {% do form.contract_end_date.setRendered %}
         </div>
@@ -113,7 +114,8 @@
                     'label': 'Couleur de profil',
                     'name': form.color.vars.full_name,
                     'id': form.color.vars.id,
-                    'value': form.color.vars.value|default('#4f46e5')
+                    'value': form.color.vars.value|default('#000000ff'),
+                    'error': form.color.vars.errors
                 }) }}
                 {% do form.color.setRendered %}
             </div>
@@ -128,7 +130,7 @@
                     'name': form.photo.vars.full_name,
                     'id': form.photo.vars.id,
                     'value': form.photo.vars.value,
-                    'required': true
+                    'required': false
                 }) }}
                 {% do form.photo.setRendered %}
             </div>
