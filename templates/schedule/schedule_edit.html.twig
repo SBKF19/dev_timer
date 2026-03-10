@@ -1,7 +1,9 @@
 {% extends 'base.html.twig' %}
 
+{% block title %}Modifier l'horaire{% endblock %}
+
 {% block body %}
-<div class="min-h-screen bg-white flex items-center justify-center p-4">
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
     <div class="w-full max-w-4xl bg-white border border-[#E3E3E3] rounded-xl shadow-sm p-12">
 
         <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Horaires de l'entreprise</h1>
@@ -14,7 +16,7 @@
         <div class="flex flex-row justify-between items-center mt-12 gap-6">
 
             <a href="{{ path('app_schedule') }}"
-            class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none flex items-center justify-center">
+               class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium flex items-center justify-center">
                 Retour
             </a>
 
@@ -29,7 +31,6 @@
                     class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case font-medium">
                 Modifier
             </button>
-
         </div>
     </div>
 </div>
