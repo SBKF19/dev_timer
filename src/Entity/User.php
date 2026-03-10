@@ -11,15 +11,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
-
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -49,9 +48,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     #[Assert\GreaterThan(
         propertyPath: 'hired_date',
-        message: 'La date d’embauche doit être antérieur à la date de fin de contrat. '
+        message: 'La date d’embauche doit être antérieure à la date de fin de contrat.'
     )]
-    private ?\DateTimeInterface $contract_end_date = null;
+    private ?DateTimeInterface $contract_end_date = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?DateTimeInterface $create_at = null;
@@ -70,56 +69,46 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Role $role = null;
 
     /**
-     * @var Collection<int, Project>
+     * Projects auxquels appartient l'utilisateur
      */
-    #[ORM\ManyToMany(targetEntity: Project::class, inversedBy: 'usersInProject')]
+    #[ORM\ManyToMany(targetEntity: Project::class, mappedBy: 'usersInProject')]
     private Collection $projects;
 
     /**
-     * @var Collection<int, HourEntry>
+     * Heures saisies par l'utilisateur
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'selected')]
-    private Collection $selected;
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: HourEntry::class)]
+    private Collection $hourEntries;
 
     /**
-     * @var Collection<int, HourEntry>
+     * Heures créées par cet utilisateur (audit)
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'created')]
-    private Collection $created;
+    #[ORM\OneToMany(mappedBy: 'createdBy', targetEntity: HourEntry::class)]
+    private Collection $createdHourEntries;
+
     /**
-     *  @var Collection<int, Project>
+     * Projets que l'utilisateur manage
      */
-    #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'manager')]
+    #[ORM\OneToMany(mappedBy: 'manager', targetEntity: Project::class)]
     private Collection $managedProjects;
+
 
     public function __construct()
     {
         $this->projects = new ArrayCollection();
-        $this->selected = new ArrayCollection();
-        $this->created = new ArrayCollection();
+        $this->hourEntries = new ArrayCollection();
+        $this->createdHourEntries = new ArrayCollection();
         $this->managedProjects = new ArrayCollection();
-        $this->projects = new ArrayCollection();
-        $this->managedProjects = new ArrayCollection();
-        $this->projects = new ArrayCollection();
-        $this->managedProjects = new ArrayCollection();
-        // On initialise souvent la date de création par défaut
+
         $this->create_at = new \DateTime();
     }
-    /*
-    //Validation
-    #[Assert\Callback]
-    public function validateDates(ExecutionContextInterface $context): void
-    {
-        if ($this->contract_end_date && $this->hired_date > $this->contract_end_date) {
-            $context->buildViolation('La date d’embauche doit être avant la date de fin de contrat.')
-                ->atPath('contract_end_date')
-                ->addViolation();
-        }
-    }
-    */
-    // --- GESTION DES COLLECTIONS ---
 
-    /** @return Collection<int, Project> */
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONS
+    |--------------------------------------------------------------------------
+    */
+
     public function getProjects(): Collection
     {
         return $this->projects;
@@ -129,32 +118,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->projects->contains($project)) {
             $this->projects->add($project);
+            $project->addUserInProject($this);
         }
+
         return $this;
     }
 
     public function removeProject(Project $project): static
     {
-        $this->projects->removeElement($project);
+        if ($this->projects->removeElement($project)) {
+            $project->removeUserInProject($this);
+        }
+
         return $this;
     }
 
-    /** @return Collection<int, Project> */
+    public function getHourEntries(): Collection
+    {
+        return $this->hourEntries;
+    }
+
+    public function getCreatedHourEntries(): Collection
+    {
+        return $this->createdHourEntries;
+    }
+
     public function getManagedProjects(): Collection
     {
         return $this->managedProjects;
     }
 
-    public function addManagedProject(Project $managedProject): static
+    public function addManagedProject(Project $project): static
     {
-        if (!$this->managedProjects->contains($managedProject)) {
-            $this->managedProjects->add($managedProject);
-            $managedProject->setManager($this);
+        if (!$this->managedProjects->contains($project)) {
+            $this->managedProjects->add($project);
+            $project->setManager($this);
         }
+
         return $this;
     }
 
-    // --- GETTERS & SETTERS STANDARDS ---
+    /*
+    |--------------------------------------------------------------------------
+    | GETTERS / SETTERS
+    |--------------------------------------------------------------------------
+    */
 
     public function getId(): ?int
     {
@@ -165,6 +173,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->email;
     }
+
     public function setEmail(string $email): static
     {
         $this->email = $email;
@@ -175,6 +184,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->firstname;
     }
+
     public function setFirstname(string $firstname): static
     {
         $this->firstname = $firstname;
@@ -185,6 +195,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->lastname;
     }
+
     public function setLastname(string $lastname): static
     {
         $this->lastname = $lastname;
@@ -195,6 +206,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->password;
     }
+
     public function setPassword(string $password): static
     {
         $this->password = $password;
@@ -205,48 +217,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->hired_date;
     }
+
     public function setHiredDate(DateTimeInterface $hired_date): static
     {
         $this->hired_date = $hired_date;
         return $this;
     }
 
-    public function getPhoto(): ?string
-    {
-        return $this->photo;
-    }
-    public function setPhoto(?string $photo): static
-    {
-        $this->photo = $photo;
-        return $this;
-    }
-
-    public function isStatus(): ?bool
-    {
-        return $this->status;
-    }
-    public function setStatus(bool $status): static
-    {
-        $this->status = $status;
-        return $this;
-    }
-
-    public function getRole(): ?Role
-    {
-        return $this->role;
-    }
-    public function setRole(?Role $role): static
-    {
-        $this->role = $role;
-        return $this;
-    }
-
-    public function getContractEndDate(): ?\DateTimeInterface
+    public function getContractEndDate(): ?DateTimeInterface
     {
         return $this->contract_end_date;
     }
 
-    public function setContractEndDate(?\DateTimeInterface $contract_end_date): static
+    public function setContractEndDate(?DateTimeInterface $contract_end_date): static
     {
         $this->contract_end_date = $contract_end_date;
         return $this;
@@ -274,6 +257,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getPhoto(): ?string
+    {
+        return $this->photo;
+    }
+
+    public function setPhoto(?string $photo): static
+    {
+        $this->photo = $photo;
+        return $this;
+    }
+
+    public function isStatus(): ?bool
+    {
+        return $this->status;
+    }
+
+    public function setStatus(bool $status): static
+    {
+        $this->status = $status;
+        return $this;
+    }
+
     public function getColor(): ?string
     {
         return $this->color;
@@ -296,20 +301,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getRole(): ?Role
+    {
+        return $this->role;
+    }
 
-    // src/Entity/User.php
+    public function setRole(?Role $role): static
+    {
+        $this->role = $role;
+        return $this;
+    }
 
-    // src/Entity/User.php
-
-    // src/Entity/User.php
+    /*
+    |--------------------------------------------------------------------------
+    | SECURITY
+    |--------------------------------------------------------------------------
+    */
 
     public function getRoles(): array
     {
-        $roles = ['ROLE_USER']; // Rôle de base pour tout le monde
+        $roles = ['ROLE_USER'];
 
         if ($this->role && $this->role->getLabel()) {
-            // On transforme "Responsable" en "ROLE_RESPONSABLE"
-            // strtoupper met en majuscules, str_replace remplace les espaces par des underscores
             $label = strtoupper($this->role->getLabel());
             $roles[] = 'ROLE_' . str_replace(' ', '_', $label);
         }

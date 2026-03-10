@@ -14,104 +14,89 @@ class HourEntry
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'affect')]
-    #[ORM\JoinColumn(name: 'activity_id', referencedColumnName : 'id', nullable: true)]
-    private ?Activities $affect = null;
+    #[ORM\ManyToOne(inversedBy: 'hourEntries')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $user = null;
 
-    #[ORM\ManyToOne(inversedBy: 'selected')]
-    #[ORM\JoinColumn(name: 'user_id', referencedColumnName : 'id', nullable: false)]
-    private ?User $selected = null;
+    #[ORM\ManyToOne(inversedBy: 'hourEntries')]
+    private ?Project $project = null;
 
-    #[ORM\ManyToOne(inversedBy: 'link')]
-    #[ORM\JoinColumn(name: 'project_id', referencedColumnName : 'id', nullable: true)]
-    private ?Project $project_id = null;
+    #[ORM\ManyToOne(inversedBy: 'hourEntries')]
+    private ?Activities $activity = null;
 
     #[ORM\Column]
-    private ?\DateTime $start_date = null;
+    private ?\DateTime $startDate = null;
 
     #[ORM\Column]
-    private ?\DateTime $end_date = null;
+    private ?\DateTime $endDate = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $commentary = null;
 
     #[ORM\Column]
-    private ?\DateTime $created_at = null;
+    private ?\DateTime $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'created')]
-    #[ORM\JoinColumn(name: 'created_by', referencedColumnName : 'id', nullable: false)]
-    private ?User $created = null;
-
+    #[ORM\ManyToOne(inversedBy: 'createdHourEntries')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $createdBy = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function setId(int $id): static
+    public function getUser(): ?User
     {
-        $this->id = $id;
+        return $this->user;
+    }
 
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
         return $this;
     }
 
-    public function getActivityId(): ?Activities
+    public function getProject(): ?Project
     {
-        return $this->affect;
+        return $this->project;
     }
 
-    public function setActivityId(?Activities $activity_id): static
+    public function setProject(?Project $project): static
     {
-        $this->affect = $affect;
-
+        $this->project = $project;
         return $this;
     }
 
-    public function getUserId(): ?User
+    public function getActivity(): ?Activities
     {
-        return $this->user_id;
+        return $this->activity;
     }
 
-    public function setUserId(User $user): static
+    public function setActivity(?Activities $activity): static
     {
-        $this->selected = $user;
-
-        return $this;
-    }
-
-    public function getProjectId(): ?Project
-    {
-        return $this->project_id;
-    }
-
-    public function setProjectId(?Project $project_id): static
-    {
-        $this->project_id = $project_id;
-
+        $this->activity = $activity;
         return $this;
     }
 
     public function getStartDate(): ?\DateTime
     {
-        return $this->start_date;
+        return $this->startDate;
     }
 
-    public function setStartDate(\DateTime $start_date): static
+    public function setStartDate(\DateTime $startDate): static
     {
-        $this->start_date = $start_date;
-
+        $this->startDate = $startDate;
         return $this;
     }
 
     public function getEndDate(): ?\DateTime
     {
-        return $this->end_date;
+        return $this->endDate;
     }
 
-    public function setEndDate(\DateTime $end_date): static
+    public function setEndDate(\DateTime $endDate): static
     {
-        $this->end_date = $end_date;
-
+        $this->endDate = $endDate;
         return $this;
     }
 
@@ -123,62 +108,33 @@ class HourEntry
     public function setCommentary(?string $commentary): static
     {
         $this->commentary = $commentary;
-
         return $this;
     }
 
     public function getCreatedAt(): ?\DateTime
     {
-        return $this->created_at;
+        return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTime $created_at): static
+    public function setCreatedAt(\DateTime $createdAt): static
     {
-        $this->created_at = $created_at;
-
+        $this->createdAt = $createdAt;
         return $this;
     }
 
     public function getCreatedBy(): ?User
     {
-        return $this->created_by;
+        return $this->createdBy;
     }
 
-    public function setCreatedBy(User $created): static
+    public function setCreatedBy(?User $createdBy): static
     {
-        $this->created = $created;
-
+        $this->createdBy = $createdBy;
         return $this;
     }
 
-    public function setActivities(?Activities $activities): static
-    {
-        $this->affect = $activities;
-
-        return $this;
-    }
-
-    public function getLink(): ?Project
-    {
-        return $this->link;
-    }
-
-    public function setLink(?Project $link): static
-    {
-        $this->link = $link;
-
-        return $this;
-    }
-
-    public function getSelected(): ?User
-    {
-        return $this->selected;
-    }
-
-    public function setSelected(?User $user): static
-    {
-        $this->selected = $user;
-
-        return $this;
-    }
+    public function __construct()
+{
+    $this->createdAt = new \DateTime();
+}
 }
