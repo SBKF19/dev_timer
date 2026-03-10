@@ -57,11 +57,13 @@
                                                 <a href="{{ path('app_schedule_edit', {'id': schedule[0].id}) }}" title="Modifier">
                                                     <img src="{{ asset('images/modify_icone.png') }}" class="w-5 h-5">
                                                 </a>
-                                                <a href="{{ path('app_schedule_delete', {'id': schedule[0].id}) }}" onclick="return confirm('Supprimer ?');" title="Supprimer">
-                                                    <img src="{{ asset('images/remove_icone.png') }}" class="w-5 h-5">
-                                                </a>
-                                            {% else %}
-                                            {% endif %}
+                                                <form method="post" action="{{ path('app_schedule_delete', {'id': schedule[0].id}) }}" onsubmit="return confirm('Supprimer ?');" style="display:inline;">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule') }}">
+                                                    <button type="submit" class="align-middle">
+                                                        <img src="{{ asset('images/remove_icone.png') }}" alt="Supprimer" class="w-5 h-5 object-contain">
+                                                    </button>
+                                                </form>
+                                            {% else %}/{% endif %}
                                         </div>
                                     </td>
 
@@ -84,11 +86,14 @@
                                                 <a href="{{ path('app_schedule_edit', {'id': aprem.id}) }}" title="Modifier">
                                                     <img src="{{ asset('images/modify_icone.png') }}" class="w-5 h-5">
                                                 </a>
-                                                <a href="{{ path('app_schedule_delete', {'id': aprem.id}) }}" onclick="return confirm('Supprimer ?');" title="Supprimer">
-                                                    <img src="{{ asset('images/remove_icone.png') }}" class="w-5 h-5">
-                                                </a>
+                                                <form method="post" action="{{ path('app_schedule_delete', {'id': aprem.id}) }}" onsubmit="return confirm('Supprimer ?');" style="display:inline;">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule') }}">
+                                                    <button type="submit" class="align-middle">
+                                                        <img src="{{ asset('images/remove_icone.png') }}" alt="Supprimer" class="w-5 h-5 object-contain">
+                                                    </button>
+                                                </form>
                                             {% else %}
-
+                                                /
                                             {% endif %}
                                         </div>
                                     </td>
