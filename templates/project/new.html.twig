@@ -1,0 +1,99 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ajout de projet
+{% endblock %}
+
+{% block body %}
+	<div class="container mx-auto mt-10 p-6">
+		<h1 class="text-2xl font-bold text-[#1d3557] mb-6">Ajout de projet</h1>
+
+		{# Le cadre principal du formulaire #}
+		<div class="bg-white border border-gray-300 rounded-2xl p-8 shadow-sm">
+			{{ form_start(form) }}
+
+			{# Ligne 1 : Nom et Description #}
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+				{% include 'composants/input_text.html.twig' with {
+                'label': 'Nom du projet',
+                'name': form.name.vars.full_name,
+                'id': form.name.vars.id,
+                'placeholder': 'Saisissez le nom du projet',
+                'value': form.name.vars.value,
+                'required': true,
+                'class': 'max-w-none'
+            } %}
+
+				{% include 'composants/input_text.html.twig' with {
+                'label': 'Description courte',
+                'name': form.description.vars.full_name,
+                'id': form.description.vars.id,
+                'placeholder': 'Saisissez une description courte',
+                'value': form.description.vars.value,
+                'required': true,
+                'class': 'max-w-none'
+            } %}
+			</div>
+
+			{# Ligne 2 : Date et Responsable #}
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+				{% include 'composants/date_picker.html.twig' with {
+                'label': 'Date de création du projet',
+                'name': form.created_at.vars.full_name,
+                'id': form.created_at.vars.id,
+                'value': form.created_at.vars.value,
+                'required': true,
+                'class': 'max-w-none'
+            } %}
+
+				{# Préparation des données pour le select_multi custom #}
+				{% set manager_items = [] %}
+				{% for choice in form.manager.vars.choices %}
+					{% set manager_items = manager_items|merge([{id: choice.value, label: choice.label}]) %}
+				{% endfor %}
+
+				{% include 'composants/select_multi.html.twig' with {
+                'label': 'Responsable de projet',
+                'name': form.manager.vars.full_name,
+                'placeholder': 'Sélectionnez un responsable de projet',
+                'items': manager_items,
+                'multiple': false,
+                'required': true
+            } %}
+			</div>
+
+			{# Ligne 3 : Toggle Actif et Couleur #}
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 items-center">
+				{% include 'composants/switch.html.twig' with {
+                'label': 'actif',
+                'name': form.archived_at.vars.full_name,
+                'checked': form.archived_at.vars.data == true
+            } %}
+
+				{% include 'composants/input_color.html.twig' with {
+                'label': 'Couleur associée',
+                'name': form.color.vars.full_name,
+                'id': form.color.vars.id,
+                'value': form.color.vars.value|default('#4f46e5')
+            } %}
+			</div>
+
+			{# Boutons d'action #}
+			<div class="flex justify-between items-center mt-8">
+				{% include 'composants/button.html.twig' with {
+                'label': 'Retour à la liste des projets',
+                'btn_type': 'annuler',
+                'class': 'rounded-xl px-8'
+            } %}
+
+				{% include 'composants/button.html.twig' with {
+                'label': 'Enregistrer ce projet',
+                'btn_type': 'confirmer',
+                'class': 'rounded-xl px-12 shadow-lg shadow-blue-200'
+            } %}
+			</div>
+
+			{# Affichage automatique du token CSRF et des champs cachés #}
+			{{ form_widget(form._token) }}
+		</div>
+	</div>
+{% endblock %}

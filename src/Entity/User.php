@@ -51,7 +51,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         propertyPath: 'hired_date',
         message: 'La date d’embauche doit être antérieur à la date de fin de contrat. '
     )]
-    private ?\DateTimeInterface $contract_end_date = null;
+    private ?DateTimeInterface $contract_end_date = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?DateTimeInterface $create_at = null;
@@ -241,12 +241,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getContractEndDate(): ?\DateTimeInterface
+    public function getContractEndDate(): ?DateTimeInterface
     {
         return $this->contract_end_date;
     }
 
-    public function setContractEndDate(?\DateTimeInterface $contract_end_date): static
+    public function setContractEndDate(?DateTimeInterface $contract_end_date): static
     {
         $this->contract_end_date = $contract_end_date;
         return $this;

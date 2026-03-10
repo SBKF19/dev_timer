@@ -16,11 +16,10 @@
 			'required': true,
 			'icon': 'fas fa-envelope',
 			'placeholder': 'nom@exemple.fr',
-			'attr': {
-				'name': requestForm.email.vars.full_name,
-				'id': requestForm.email.vars.id,
-				'value': requestForm.email.vars.value
-		}}) }}
+			'name': requestForm.email.vars.full_name,
+			'id': requestForm.email.vars.id,
+			'value': requestForm.email.vars.value
+		}) }}
 		{% do requestForm.email.setRendered %}
 
 		<div class="flex flex-row w-full gap-4 mt-6">

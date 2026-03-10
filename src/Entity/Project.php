@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\ProjectRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -23,7 +24,7 @@ class Project
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private ?\DateTimeImmutable $created_at = null;
+    private ?DateTimeImmutable $created_at = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $archived_at = null;
@@ -55,7 +56,7 @@ class Project
     {
         $this->usersInProject = new ArrayCollection();
         $this->link = new ArrayCollection();
-        $this->created_at = new \DateTimeImmutable();
+        $this->created_at = new DateTimeImmutable();
 
     }
 
@@ -84,9 +85,15 @@ class Project
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->created_at;
+    }
+
+    public function setCreatedAt(?DateTimeImmutable $created_at): static
+    {
+        $this->created_at = $created_at;
+        return $this;
     }
 
     public function getManager(): ?User
@@ -177,5 +184,10 @@ class Project
         }
 
         return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->archived_at === null;
     }
 }
