@@ -17,7 +17,9 @@ final class ScheduleController extends AbstractController
     public function index(ScheduleRepository $scheduleRepository): Response
     {
         // On récupère tous les horaires triés par jour
-        $allSchedules = $scheduleRepository->findBy([], ['dayOfWeek' => 'ASC', 'startTime' => 'ASC']);
+        $allSchedules = $scheduleRepository->findBy(
+        ['deleted_at' => null],
+        ['dayOfWeek' => 'ASC', 'startTime' => 'ASC']);
 
         $groupedSchedules = [];
         foreach ($allSchedules as $schedule) {
@@ -55,7 +57,8 @@ final class ScheduleController extends AbstractController
                     'dayOfWeek' => $schedule->getDayOfWeek(),
                     'period'    => $schedule->getPeriod(),
                     'startTime' => $startTime,
-                    'endTime'   => $endTime
+                    'endTime'   => $endTime,
+                    'deleted_at' => null
                 ]);
 
                 if ($existingSchedule) {
@@ -67,7 +70,8 @@ final class ScheduleController extends AbstractController
                     if ($schedule->getPeriod() === 'Après-midi') {
                         $morningSchedule = $entityManager->getRepository(Schedule::class)->findOneBy([
                             'dayOfWeek' => $schedule->getDayOfWeek(),
-                            'period'    => 'Matin'
+                            'period'    => 'Matin',
+                            'deleted_at' => null
                         ]);
                         if ($morningSchedule && $startTime < $morningSchedule->getEndTime()) {
                             $this->addFlash('error', 'L\'heure de début de l\'après-midi doit commencer après la fin du matin.');
@@ -76,7 +80,8 @@ final class ScheduleController extends AbstractController
                     } else {
                         $afternoonSchedule = $entityManager->getRepository(Schedule::class)->findOneBy([
                             'dayOfWeek' => $schedule->getDayOfWeek(),
-                            'period'    => 'Après-midi'
+                            'period'    => 'Après-midi',
+                            'deleted_at' => null
                         ]);
                         if ($afternoonSchedule && $endTime > $afternoonSchedule->getStartTime()) {
                             $this->addFlash('error', 'L\'heure de fin du matin doit se terminer avant le début de l\'après-midi.');
@@ -120,7 +125,8 @@ final class ScheduleController extends AbstractController
                 if ($schedule->getPeriod() === 'Après-midi') {
                     $morningSchedule = $entityManager->getRepository(Schedule::class)->findOneBy([
                         'dayOfWeek' => $schedule->getDayOfWeek(),
-                        'period'    => 'Matin'
+                        'period'    => 'Matin',
+                        'deleted_at' => null
                     ]);
 
                     // Si on modifie l'après-midi, son début ne doit pas être AVANT la fin du matin
@@ -131,7 +137,8 @@ final class ScheduleController extends AbstractController
                 } else {
                     $afternoonSchedule = $entityManager->getRepository(Schedule::class)->findOneBy([
                         'dayOfWeek' => $schedule->getDayOfWeek(),
-                        'period'    => 'Après-midi'
+                        'period'    => 'Après-midi',
+                        'deleted_at' => null
                     ]);
 
                     // Si on modifie le matin, sa fin ne doit pas être APRÈS le début de l'après-midi
@@ -159,7 +166,7 @@ final class ScheduleController extends AbstractController
     public function delete(Request $request, EntityManagerInterface $entityManager, Schedule $schedule): Response
     {
         if ($this->isCsrfTokenValid('delete_schedule', $request->request->get('_token'))) {
-            $entityManager->remove($schedule);
+            $schedule->setDeletedAt(new \DateTime());
             $entityManager->flush();
             $this->addFlash('success', 'Créneau horaire supprimé !');
         }

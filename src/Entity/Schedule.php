@@ -26,6 +26,9 @@ class Schedule
     #[ORM\Column(length: 25)]
     private ?string $period = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTime $deleted_at = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -82,6 +85,18 @@ class Schedule
     public function setPeriod(string $period): static
     {
         $this->period = $period;
+
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTime
+    {
+        return $this->deleted_at;
+    }
+
+    public function setDeletedAt(?\DateTime $deleted_at): static
+    {
+        $this->deleted_at = $deleted_at;
 
         return $this;
     }
