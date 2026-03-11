@@ -1,0 +1,40 @@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    <div class="form-control w-full">
+        {{ form_label(HolidayForm.date) }}
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#B4B4B4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            </div>
+            {{ form_widget(HolidayForm.date) }}
+        </div>
+        {{ form_errors(HolidayForm.date) }}
+    </div>
+
+    <div class="form-control w-full">
+        {{ form_label(HolidayForm.name) }}
+        <div>
+            {{ form_widget(HolidayForm.name, { 'attr': {'class': 'px-4 !pl-4'} }) }}
+        </div>
+        {{ form_errors(HolidayForm.name) }}
+    </div>
+
+</div>
+
+<style>
+    /* Pour masquer l'icône calendrier native tout en gardant le clic fonctionnel */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        background: transparent;
+        bottom: 0;
+        color: transparent;
+        cursor: pointer;
+        height: auto;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: auto;
+    }
+</style>
