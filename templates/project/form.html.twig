@@ -1,0 +1,137 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ajout de projet
+{% endblock %}
+
+{% block body %}
+	<div class="container mx-auto mt-10 p-6">
+		<h1 class="text-2xl font-bold text-[#1d3557] mb-6">
+			{{ isEdit|default(false) ? 'Modifier le projet' : 'Ajout de projet' }}
+		</h1>
+
+		{# Le cadre principal du formulaire #}
+		<div class="bg-white border border-gray-300 rounded-2xl p-8 shadow-sm">
+			{{ form_start(form) }}
+
+			{# Ligne 1 : Nom et Description #}
+			<div class="flex gap-8">
+				{% include 'composants/input_text.html.twig' with {
+                'label': 'Nom du projet',
+                'name': form.name.vars.full_name,
+                'id': form.name.vars.id,
+                'placeholder': 'Saisissez le nom du projet',
+                'value': form.name.vars.value,
+                'required': true,
+                'class': 'max-w-none',
+                'error': form.name.vars.errors
+            } %}
+
+				{% include 'composants/input_text.html.twig' with {
+                'label': 'Description courte',
+                'name': form.description.vars.full_name,
+                'id': form.description.vars.id,
+                'placeholder': 'Saisissez une description courte',
+                'value': form.description.vars.value,
+                'class': 'max-w-none'
+            } %}
+			</div>
+
+			{# Ligne 2 : Date et Responsable #}
+			<div class="flex gap-8">
+				{% include 'composants/date_picker.html.twig' with {
+                'label': 'Date de création du projet',
+                'name': form.created_at.vars.full_name,
+                'id': form.created_at.vars.id,
+                'value': form.created_at.vars.value,
+                'required': true,
+                'class': 'max-w-none'
+            } %}
+
+				{# Préparation des données pour le select_multi custom #}
+				{% set manager_items = [] %}
+				{% set initial_manager = 'null' %}
+
+				{% for choice in form.manager.vars.choices %}
+					{% set item = {id: choice.value, label: choice.label} %}
+					{% set manager_items = manager_items|merge([item]) %}
+
+					{# 
+										                        LOGIQUE COMMUNE (Ajout & Edit) :
+										                        Si la valeur du choix actuel correspond à la valeur stockée dans le formulaire,
+										                        on prépare l'objet JSON pour Alpine.js
+										                        #}
+					{% if form.manager.vars.value is not empty and choice.value == form.manager.vars.value %}
+						{% set initial_manager = item|json_encode() %}
+					{% endif %}
+				{% endfor %}
+
+				{% include 'composants/select_multi.html.twig' with {
+                        'label': 'Responsable de projet',
+                        'name': form.manager.vars.full_name,
+                        'placeholder': 'Sélectionnez un responsable de projet',
+                        'items': manager_items,
+                        'initial_value': initial_manager,
+                        'multiple': false,
+                        'required': true
+                    } %}
+			</div>
+
+			{# Ligne 3 : Toggle Actif et Couleur #}
+			<div class="flex gap-8 w-fit">
+				{% include 'composants/input_color.html.twig' with {
+                'label': 'Couleur associée',
+                'name': form.color.vars.full_name,
+                'id': form.color.vars.id,
+                'value': form.color.vars.value|default('#4f46e5')
+            } %}
+			</div>
+
+			{% include 'composants/switch.html.twig' with {
+                'label': 'actif',
+                'name': form.archived_at.vars.full_name,
+                'checked': form.archived_at.vars.data == true
+            } %}
+
+			{# Boutons d'action #}
+			<div
+				class="flex gap-8">
+				{# On ajoute 'href' pour transformer le composant en lien <a> et éviter le submit #}
+				{% include 'composants/button.html.twig' with {
+                    'label': 'Retour à la liste des projets',
+                    'type': 'annuler',
+                    'href': path('app_project'),
+                    'class': 'rounded-xl px-8'
+                } %}
+
+				{% if isEdit|default(false) %}
+					{% include 'composants/button.html.twig' with {
+                        'label': 'Supprimer',
+                        'type': 'effacer',
+                        'class': 'rounded-xl px-8',
+                        'attr': {
+                            'type': 'button',
+                            'onclick': "if(confirm('Confirmer la suppression ?')) { document.getElementById('delete-form').submit(); }"
+                        }
+                    } %}
+				{% endif %}
+
+				{% include 'composants/button.html.twig' with {
+                    'label': isEdit|default(false) ? 'Mettre à jour' : 'Enregistrer ce projet',
+                    'type': 'confirmer'
+                } %}
+			</div>
+
+			{# Affichage automatique du token CSRF et des champs cachés #}
+			{{ form_widget(form._token) }}
+
+			{{ form_end(form, {render_rest: false}) }}
+			{# On ferme le formulaire principal ici #}
+
+			{# Formulaire de suppression caché, placé APRES le form_end #}
+				{% if isEdit|default(false) %}
+					<form id="delete-form" method="post" action="{{ path('app_project_delete', {'id': project.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce projet ?');" style="display:none;"> <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ project.id) }}">
+				</form>
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}

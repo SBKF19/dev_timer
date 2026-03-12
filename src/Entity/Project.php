@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
 class Project
@@ -18,16 +19,24 @@ class Project
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le nom du projet est obligatoire.")]
+    #[Assert\Length(
+        min: 3,
+        max: 255,
+        minMessage: "Le nom doit faire au moins {{ limit }} caractères."
+    )]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Assert\NotNull(message: "La date de création est requise.")]
+    #[Assert\Type("\DateTimeImmutable")]
     private ?DateTimeImmutable $created_at = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $archived_at = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $archived_at = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $color = null;
@@ -38,6 +47,7 @@ class Project
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'managedProjects')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: "Veuillez sélectionner un responsable de projet.")]
     private ?User $manager = null;
 
     /**
@@ -128,8 +138,12 @@ class Project
         }
         return $this;
     }
+    public function getArchivedAt(): ?DateTimeImmutable
+    {
+        return $this->archived_at;
+    }
 
-    public function setArchivedAt(?\DateTimeInterface $archived_at): static
+    public function setArchivedAt(?DateTimeImmutable $archived_at): static
     {
         $this->archived_at = $archived_at;
         return $this;

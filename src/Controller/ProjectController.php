@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Project;
 use App\Form\ProjectType;
+use App\Repository\ProjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,17 +18,15 @@ class ProjectController extends AbstractController
     {
         $project = new Project();
 
-        // On crée le formulaire en lui passant l'instance de notre entité
         $form = $this->createForm(ProjectType::class, $project);
         $form->handleRequest($request);
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                // Optionnel : Si 'archived_at' est une date dans ton entité mais un checkbox dans le form,
-                // tu devrais gérer la logique ici. Exemple :
                 if ($form->get('archived_at')->getData() === false) {
                     $project->setArchivedAt(new \DateTimeImmutable());
                 }
+
                 $user = $this->getUser();
                 $project->setCreatedBy($user);
 
@@ -35,14 +34,68 @@ class ProjectController extends AbstractController
                 $entityManager->flush();
 
                 $this->addFlash('success', 'Le projet a été créé avec succès !');
-
-                return $this->redirectToRoute('app_project_new'); // Assure-toi que cette route existe
+                return $this->redirectToRoute('app_project'); // Assure-toi que cette route existe
             }
         }
 
-        return $this->render('project/new.html.twig', [
+        return $this->render('project/form.html.twig', [
             'project' => $project,
             'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/project/edit/{id}', name: 'app_project_edit')]
+    public function edit(Project $project, Request $request, EntityManagerInterface $em): Response
+    {
+        $form = $this->createForm(ProjectType::class, $project);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                $isActif = $form->get('archived_at')->getData();
+                $currentArchivedAt = $project->getArchivedAt();
+
+                if ($isActif === true && $currentArchivedAt !== null) {
+                    $project->setArchivedAt(null);
+                } elseif ($isActif === false && $currentArchivedAt === null) {
+                    $project->setArchivedAt(new \DateTimeImmutable());
+                }
+
+                $this->addFlash('success', 'Le projet a été mis à jour.');
+                $em->flush();
+                return $this->redirectToRoute('app_project');
+            }
+        }
+
+        return $this->render('project/form.html.twig', [
+            'form' => $form->createView(),
+            'project' => $project,
+            'isEdit' => true
+        ]);
+    }
+
+    #[Route('/project/delete/{id}', name: 'app_project_delete', methods: ['POST'])]
+    public function delete(Request $request, Project $project, EntityManagerInterface $em): Response
+    {
+        // Vérification du token CSRF pour empêcher les failles de sécurité
+        if ($this->isCsrfTokenValid('delete' . $project->getId(), $request->request->get('_token'))) {
+            $em->remove($project);
+            $em->flush();
+
+            $this->addFlash('success', 'Le projet a été supprimé avec succès.');
+            return $this->redirectToRoute('app_project');
+        }
+
+        return $this->redirectToRoute('app_project_new');
+    }
+
+    #[Route('/projects', name: 'app_project', methods: ['GET', 'POST'])]
+    public function list(ProjectRepository $projectRepo, Request $request): Response
+    {
+        $projects = $projectRepo->findAll();
+
+        return $this->render('project/list.html.twig', [
+            'projects' => $projects
         ]);
     }
 }

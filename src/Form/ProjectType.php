@@ -24,7 +24,8 @@ class ProjectType extends AbstractType
                 'attr' => ['placeholder' => 'Saisissez le nom du projet']
             ])
             ->add('description', TextareaType::class, [
-                'label' => 'Description courte - champ obligatoire',
+                'label' => 'Description courte',
+                'required' => false,
                 'attr' => ['placeholder' => 'Saisissez une description courte', 'rows' => 1]
             ])
             ->add('created_at', DateTimeType::class, [
