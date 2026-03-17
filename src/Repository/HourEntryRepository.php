@@ -16,6 +16,15 @@ class HourEntryRepository extends ServiceEntityRepository
         parent::__construct($registry, HourEntry::class);
     }
 
+    public function save(HourEntry $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
     //    /**
     //     * @return HourEntry[] Returns an array of HourEntry objects
     //     */

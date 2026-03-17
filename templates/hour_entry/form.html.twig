@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ editMode ? 'Modifier' : 'Ajouter' }} une saisie{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-2xl mx-auto">
+
+    {# --- BLOC D'AFFICHAGE DES ERREURS FLASH --- #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label == 'error' ? 'error' : 'success' }} mb-6 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ label == 'error' ? 'X' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }}" /></svg>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="card bg-base-100 shadow-xl border border-base-200">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-6">
+                {{ editMode ? 'Modifier la saisie' : 'Nouvelle saisie horaire' }}
+            </h2>
+
+            {# Affichage de la date en lecture seule #}
+            <div class="bg-base-200 p-3 rounded-lg my-4 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="font-semibold text-lg">
+                    {{ hourEntry.startDate|date('d/m/Y') }}
+                </span>
+            </div>
+
+            {{ form_start(form) }}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control w-full">
+                        {{ form_label(form.startDate, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
+                        {{ form_widget(form.startDate, {'attr': {'class': 'input input-bordered w-full'}}) }}
+                        <div class="text-error text-sm mt-1">{{ form_errors(form.startDate) }}</div>
+                    </div>
+                    <div class="form-control w-full">
+                        {{ form_label(form.endDate, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
+                        {{ form_widget(form.endDate, {'attr': {'class': 'input input-bordered w-full'}}) }}
+                        <div class="text-error text-sm mt-1">{{ form_errors(form.endDate) }}</div>
+                    </div>
+                </div>
+
+                <div class="form-control w-full mt-4">
+                    {{ form_label(form.activity, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
+                    {{ form_widget(form.activity, {'attr': {'class': 'select select-bordered w-full', 'id': 'select-activity'}}) }}
+                    <div class="text-error text-sm mt-1">{{ form_errors(form.project) }}</div>
+                </div>
+
+                <div class="form-control w-full mt-4" id="project-container">
+                    {{ form_label(form.project, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
+                    {{ form_widget(form.project, {'attr': {'class': 'select select-bordered w-full'}}) }}
+                </div>
+
+                <div class="form-control w-full mt-4">
+                    {{ form_label(form.commentary, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
+                    {{ form_widget(form.commentary, {'attr': {'class': 'textarea textarea-bordered w-full'}}) }}
+                </div>
+
+                <div class="card-actions justify-end mt-8 gap-2">
+                    {% include 'composants/button.html.twig' with {
+                        'label': 'Annuler',
+                        'btn_type': 'annuler',
+                        'href': path('hour_entry_list')
+                    } %}
+                    
+                    {% include 'composants/button.html.twig' with {
+                        'label': editMode ? 'Enregistrer' : 'Confirmer',
+                        'btn_type': 'confirmer'
+                    } %}
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[name="hour_entry"]');
+    const activitySelect = document.getElementById('select-activity') || document.querySelector('select[id$="_activity"]');
+    const projectContainer = document.getElementById('project-container');
+    const projectSelect = projectContainer.querySelector('select');
+
+    function toggleProjectField() {
+        const selectedOption = activitySelect.options[activitySelect.selectedIndex];
+        const needProject = selectedOption ? selectedOption.getAttribute('data-need-project') === '1' : false;
+        
+        projectContainer.style.display = needProject ? 'block' : 'none';
+        
+        // On ajoute/retire l'attribut required dynamiquement pour le navigateur
+        if (needProject) {
+            projectSelect.setAttribute('required', 'required');
+        } else {
+            projectSelect.removeAttribute('required');
+            projectSelect.value = '';
+        }
+    }
+
+    activitySelect.addEventListener('change', toggleProjectField);
+    toggleProjectField();
+
+    // Sécurité supplémentaire à la soumission
+    form.addEventListener('submit', function(e) {
+        const selectedOption = activitySelect.options[activitySelect.selectedIndex];
+        const needProject = selectedOption ? selectedOption.getAttribute('data-need-project') === '1' : false;
+
+        if (needProject && !projectSelect.value) {
+            e.preventDefault();
+            alert("Veuillez sélectionner un projet pour cette activité.");
+        }
+    });
+});
+</script>
+{% endblock %}

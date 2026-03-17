@@ -1,0 +1,110 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Calendrier des saisies{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-7xl mx-auto">
+    {# En-tête avec daisyUI #}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-base-content">Calendrier des saisies</h1>
+            <p class="text-base-content/60">Gérez vos pointages horaires visuellement</p>
+        </div>
+        
+        <a href="{{ path('hour_entry_add') }}" class="btn btn-primary shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Ajouter une saisie
+        </a>
+    </div>
+
+    {# Conteneur du calendrier (Card daisyUI) #}
+    <div class="card bg-base-100 shadow-xl border border-base-200">
+        <div class="card-body p-4 md:p-8">
+            <div id='calendar' class="min-h-[600px]"></div>
+        </div>
+    </div>
+</div>
+
+{# Styles personnalisés pour intégrer FullCalendar au thème DaisyUI #}
+<style>
+    .fc-event-main, .fc-event-main-frame {
+        background: transparent !important;
+    }
+    
+    .fc-v-event {
+        border: none !important;
+    }
+
+    .fc-event-title {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    // On récupère les données envoyées par le controller
+    const businessHoursFromDb = {{ businessHours|json_encode|raw }};
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        locale: 'fr',
+        firstDay: 1,
+        weekends: false,
+        allDaySlot: false,
+        slotMinTime: '{{ minTime }}', 
+        slotMaxTime: '{{ maxTime }}',
+        businessHours: {{ businessHours|json_encode|raw }}, 
+        selectConstraint: 'businessHours',
+        
+        selectable: true,
+         // Empêche de sélectionner une plage horaire si elle chevauche un jour férié
+        // On vérifie si l'ID de l'événement qui "gêne" commence par 'holiday_'
+        selectOverlap: function(event) {
+        return !event.id.startsWith('holiday_');
+    },
+        events: "{{ path('hour_entry_events') }}",
+        eventDisplay: 'block',
+        eventDidMount: function(info) {
+        if (info.event.backgroundColor) {
+            // On force le style directement sur l'élément DOM
+            info.el.style.setProperty('background-color', info.event.backgroundColor, 'important');
+            info.el.style.setProperty('border-color', info.event.backgroundColor, 'important');
+        }
+    },
+
+        select: function(info) {
+            const start = info.startStr;
+            const end = info.endStr;
+            window.location.href = `{{ path('hour_entry_add') }}?start=${start}&end=${end}`;
+        },
+
+        eventClick: function(info) {
+            const eventId = info.event.id;
+
+        // Si c'est un jour férié, on ne fait rien
+        if (eventId.startsWith('holiday_')) {
+            return;
+        }
+
+        // On retire le préfixe 'entry_' pour ne garder que le chiffre (ex: 'entry_41' -> '41')
+        const numericId = eventId.replace('entry_', '');
+        
+        const url = "{{ path('hour_entry_edit', {'id': 'PLACEHOLDER'}) }}".replace('PLACEHOLDER', numericId);
+        window.location.href = url;
+            }
+    });
+
+    calendar.render();
+});
+</script>
+{% endblock %}
