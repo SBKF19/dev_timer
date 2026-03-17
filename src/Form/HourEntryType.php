@@ -13,9 +13,17 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use App\Repository\ScheduleRepository;
 
 class HourEntryType extends AbstractType
 {
+    private ScheduleRepository $scheduleRepository;
+
+    // 2. On l'injecte via le constructeur
+    public function __construct(ScheduleRepository $scheduleRepository)
+    {
+        $this->scheduleRepository = $scheduleRepository;
+    }
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -53,11 +61,13 @@ class HourEntryType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
+        $scheduleRepo = $this->scheduleRepository;
         $resolver->setDefaults([
             'data_class' => HourEntry::class,
+            'day_of_week' => null,
             'constraints' => [
                 // Utilisation d'une fonction anonyme pour éviter les problèmes de référence circulaire
-                new Callback(function (HourEntry $hourEntry, ExecutionContextInterface $context) {
+                new Callback(function (HourEntry $hourEntry, ExecutionContextInterface $context) use ($scheduleRepo) {
                     $activity = $hourEntry->getActivity();
                     $project = $hourEntry->getProject();
 
@@ -75,6 +85,52 @@ class HourEntryType extends AbstractType
                                 ->atPath('endDate')
                                 ->addViolation();
                         }
+                    }
+                    //3
+                    $form = $context->getRoot();
+                    $dayOfWeek = $form->getConfig()->getOption('day_of_week');
+
+                    if (!$dayOfWeek) return; // Sécurité
+
+                    $schedules = $scheduleRepo->findBy(['dayOfWeek' => $dayOfWeek]);
+
+                    if (empty($schedules)) {
+                        $context->buildViolation("Aucun horaire de travail défini pour ce jour.")
+                            ->atPath('startDate')->addViolation();
+                        return;
+                    }
+
+                    $userStart = $hourEntry->getStartDate()->format('H:i');
+                    $userEnd = $hourEntry->getEndDate()->format('H:i');
+                    $isValid = false;
+
+                    foreach ($schedules as $s) {
+                        $sStart = $s->getStartTime()->format('H:i');
+                        $sEnd = $s->getEndTime()->format('H:i');
+
+                        if ($userStart >= $sStart && $userEnd <= $sEnd) {
+                            $isValid = true;
+                            break;
+                        }
+                    }
+
+                    if (!$isValid) {
+                        $slots = [];
+                            foreach ($schedules as $s) {
+                                $slots[] = sprintf(
+                                    "%s à %s", 
+                                    $s->getStartTime()->format('H:i'), 
+                                    $s->getEndTime()->format('H:i')
+                                );
+                            }
+
+                            // 2. On transforme le tableau en texte (ex: "08:00 à 12:00, 14:00 à 18:00")
+                            $message = "Hors créneaux de travail. Pour ce jour, les horaires sont : " . implode(', ', $slots) . ".";
+
+                            // 3. On envoie le message personnalisé
+                            $context->buildViolation($message)
+                                ->atPath('endDate')
+                                ->addViolation();
                     }
                 }),
             ],

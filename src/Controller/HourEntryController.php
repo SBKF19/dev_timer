@@ -115,53 +115,66 @@ final class HourEntryController extends AbstractController
     #[Route('/add', name: 'add')]
     public function add(Request $request, HourEntryRepository $hourEntryRepository): Response
     {
-        $hourEntry = new HourEntry();
-        
-        // 1. On extrait la date de référence depuis l'URL (FullCalendar)
         $startParam = $request->query->get('start');
-        $cleanStart = $startParam ? explode(' ', $startParam)[0] : 'now';
-        $dateReference = new \DateTime($cleanStart);
+        
+        // NETTOYAGE : Si FullCalendar envoie "2026-03-02T16:00:00 01:00"
+        // On ne garde que "2026-03-02T16:00:00" pour éviter le "Double time specification"
+        if ($startParam && str_contains($startParam, ' ')) {
+            $startParam = explode(' ', $startParam)[0];
+        }
 
-        // Initialisation par défaut pour l'affichage du formulaire
+        try {
+            $dateReference = new \DateTime($startParam ?? 'now');
+        } catch (\Exception $e) {
+            $dateReference = new \DateTime('now');
+        }
+
+        $dayOfWeek = (int)$dateReference->format('N');
+
+        $hourEntry = new HourEntry();
         $hourEntry->setStartDate(clone $dateReference);
-        $hourEntry->setEndDate(clone $dateReference);
+        $hourEntry->setEndDate((clone $dateReference)->modify('+1 hour'));
         $hourEntry->setUser($this->getUser());
         $hourEntry->setCreatedBy($this->getUser());
         $hourEntry->setCreatedAt(new \DateTime());
 
-        $form = $this->createForm(HourEntryType::class, $hourEntry);
-        $form->handleRequest($request);
+        $form = $this->createForm(HourEntryType::class, $hourEntry, [
+            'day_of_week' => $dayOfWeek 
+        ]);
 
-        // 2. CORRECTION CRUCIALE : On remet la bonne date AVANT la validation
-        // car le TimeType l'a écrasée par 01/01/1970
-        if ($form->isSubmitted()) {
+        $form->handleRequest($request);
+        $hourEntry->getStartDate()->setDate(
+            (int)$dateReference->format('Y'), 
+            (int)$dateReference->format('m'), 
+            (int)$dateReference->format('d')
+        );
+        $hourEntry->getEndDate()->setDate(
+            (int)$dateReference->format('Y'), 
+            (int)$dateReference->format('m'), 
+            (int)$dateReference->format('d')
+        );
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Fixation de la date car TimeType la remet en 1970
             $hourEntry->getStartDate()->setDate(
-                (int)$dateReference->format('Y'), 
-                (int)$dateReference->format('m'), 
-                (int)$dateReference->format('d')
+                (int)$dateReference->format('Y'), (int)$dateReference->format('m'), (int)$dateReference->format('d')
             );
             $hourEntry->getEndDate()->setDate(
-                (int)$dateReference->format('Y'), 
-                (int)$dateReference->format('m'), 
-                (int)$dateReference->format('d')
+                (int)$dateReference->format('Y'), (int)$dateReference->format('m'), (int)$dateReference->format('d')
             );
-        }
 
-        // 3. Validation (le Callback du HourEntryType verra maintenant la VRAIE date)
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Vérification du chevauchement (Overlap)
             if ($this->checkOverlap($hourEntry, $hourEntryRepository)) {
-                $this->addFlash('error', 'Attention : Cette plage horaire chevauche une saisie existante.');
+                $this->addFlash('error', 'Chevauchement détecté.');
             } else {
                 $hourEntryRepository->save($hourEntry, true);
-                $this->addFlash('success', 'Saisie horaire ajoutée avec succès !');
+                $this->addFlash('success', 'Saisie ajoutée !');
                 return $this->redirectToRoute('hour_entry_list');
             }
         }
 
         return $this->render('hour_entry/form.html.twig', [
             'form' => $form->createView(),
-            'editMode' => false,
+            'editMode' => false, // false car c'est un ajout
             'hourEntry' => $hourEntry,
         ], new Response(null, $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
@@ -169,14 +182,31 @@ final class HourEntryController extends AbstractController
     #[Route('/edit/{id}', name: 'edit')]
     public function edit(HourEntry $hourEntry, Request $request, HourEntryRepository $hourEntryRepository): Response
     {
-        // 1. On mémorise la date d'origine de la saisie
+        // 1. On mémorise la date (jour/mois/année) d'origine
+        // car le TimeType va remettre la date au 01/01/1970
         $dateBase = clone $hourEntry->getStartDate();
+        $dayOfWeek = (int)$dateBase->format('N');
 
-        $form = $this->createForm(HourEntryType::class, $hourEntry);
+        // 2. On passe le day_of_week pour que le Callback du FormType fonctionne
+        $form = $this->createForm(HourEntryType::class, $hourEntry, [
+            'day_of_week' => $dayOfWeek
+        ]);
+        
         $form->handleRequest($request);
 
-        // 2. On restaure la date d'origine AVANT la validation
-        if ($form->isSubmitted()) {
+        $hourEntry->getStartDate()->setDate(
+            (int)$dateBase->format('Y'), 
+            (int)$dateBase->format('m'), 
+            (int)$dateBase->format('d')
+        );
+        $hourEntry->getEndDate()->setDate(
+            (int)$dateBase->format('Y'), 
+            (int)$dateBase->format('m'), 
+            (int)$dateBase->format('d')
+        );
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // 3. On restaure la date d'origine sur les objets DateTime modifiés par le formulaire
             $hourEntry->getStartDate()->setDate(
                 (int)$dateBase->format('Y'), 
                 (int)$dateBase->format('m'), 
@@ -187,11 +217,10 @@ final class HourEntryController extends AbstractController
                 (int)$dateBase->format('m'), 
                 (int)$dateBase->format('d')
             );
-        }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+            // 4. Vérification finale du chevauchement (Overlap)
             if ($this->checkOverlap($hourEntry, $hourEntryRepository)) {
-                $this->addFlash('error', 'Attention : Cette modification crée un chevauchement.');
+                $this->addFlash('error', 'Attention : Cette modification crée un chevauchement avec une autre saisie.');
             } else {
                 $hourEntryRepository->save($hourEntry, true);
                 $this->addFlash('success', 'Saisie horaire modifiée avec succès !');
