@@ -239,14 +239,12 @@ final class HourEntryController extends AbstractController
     public function delete(HourEntry $hourEntry, Request $request, HourEntryRepository $hourEntryRepository): Response
     {
         if ($this->isCsrfTokenValid('delete' . $hourEntry->getId(), $request->request->get('_token'))) {
-            // Si vous avez un champ status/deletedAt comme dans UserController :
-            // $hourEntry->setStatus(false); 
-            // $hourEntryRepository->save($hourEntry, true);
-            
-            // Sinon, suppression réelle :
+        
             $hourEntryRepository->remove($hourEntry, true);
             
-            $this->addFlash('success', 'Saisie horaire supprimée avec succès.');
+            $this->addFlash('success', 'La saisie horaire a été supprimée.');
+        } else {
+            $this->addFlash('error', 'Token de sécurité invalide.');
         }
 
         return $this->redirectToRoute('hour_entry_list');
@@ -276,4 +274,79 @@ final class HourEntryController extends AbstractController
 
         return count($overlapping->getQuery()->getResult()) > 0;
     }
+
+   #[Route('/stats', name: 'stats', methods: ['GET'])]
+        public function getStats(
+            Request $request, 
+            HourEntryRepository $hourEntryRepository, 
+            ScheduleRepository $scheduleRepository,
+            HolidayRepository $holidayRepository
+        ): JsonResponse {
+            $startParam = $request->query->get('start');
+            $endParam = $request->query->get('end');
+
+            // 1. Nettoyage des dates pour éviter le "Double time specification"
+            $startParam = $startParam ? explode(' ', $startParam)[0] : 'now';
+            $endParam = $endParam ? explode(' ', $endParam)[0] : 'now';
+
+            $startDate = new \DateTime($startParam);
+            $endDate = new \DateTime($endParam);
+            
+            // --- INITIALISATION DES VARIABLES (Important pour éviter le Undefined variable) ---
+            $totalTheoreticalMinutes = 0;
+            $totalSaisieMinutes = 0;
+
+            // 2. Calcul des heures théoriques (Schedules)
+            $schedules = $scheduleRepository->findAll();
+            
+            // On boucle sur chaque jour de la période (ex: du lundi au dimanche)
+            $period = new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate);
+            
+            foreach ($period as $date) {
+                $dayOfWeek = (int)$date->format('N'); // 1 (lundi) à 7 (dimanche)
+                
+                // On vérifie si ce jour précis est férié
+                $isHoliday = $holidayRepository->findOneBy(['date' => $date]);
+                if ($isHoliday) {
+                    continue; // On passe au jour suivant, on ne compte pas d'heures à bosser
+                }
+
+                // On ajoute les minutes prévues dans le planning pour ce jour de la semaine
+                foreach ($schedules as $s) {
+                    if ($s->getDayOfWeek() === $dayOfWeek) {
+                        $start = $s->getStartTime();
+                        $end = $s->getEndTime();
+                        
+                        if ($start && $end) {
+                            $diff = $start->diff($end);
+                            $totalTheoreticalMinutes += ($diff->h * 60) + $diff->i;
+                        }
+                    }
+                }
+            }
+
+            // 3. Calcul des heures déjà saisies par l'utilisateur
+            $entries = $hourEntryRepository->createQueryBuilder('h')
+                ->where('h.user = :user')
+                ->andWhere('h.startDate >= :start')
+                ->andWhere('h.endDate <= :end')
+                ->setParameter('user', $this->getUser())
+                ->setParameter('start', $startDate)
+                ->setParameter('end', $endDate)
+                ->getQuery()
+                ->getResult();
+
+            foreach ($entries as $entry) {
+                $diff = $entry->getStartDate()->diff($entry->getEndDate());
+                $totalSaisieMinutes += ($diff->h * 60) + $diff->i;
+            }
+
+            // 4. Calcul du restant (on ne descend pas en dessous de 0)
+            $restantMinutes = max(0, $totalTheoreticalMinutes - $totalSaisieMinutes);
+
+            return new JsonResponse([
+                'saisie' => sprintf('%dh%02d', floor($totalSaisieMinutes / 60), $totalSaisieMinutes % 60),
+                'restant' => sprintf('%dh%02d', floor($restantMinutes / 60), $restantMinutes % 60),
+            ]);
+        }
 }

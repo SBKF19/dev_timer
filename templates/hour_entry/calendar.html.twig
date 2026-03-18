@@ -10,13 +10,17 @@
             <h1 class="text-3xl font-bold text-base-content">Calendrier des saisies</h1>
             <p class="text-base-content/60">Gérez vos pointages horaires visuellement</p>
         </div>
-        
-        <a href="{{ path('hour_entry_add') }}" class="btn btn-primary shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Ajouter une saisie
-        </a>
+        <div class="flex gap-4">
+        <div class="bg-base-100 border border-base-200 shadow-sm px-6 py-3 rounded-2xl text-center">
+            <div class="text-xs uppercase tracking-wider font-bold text-gray-400">Heures saisies</div>
+            <div id="stat-saisie" class="text-2xl font-black text-blue-600">0h00</div>
+        </div>
+        <div class="bg-base-100 border border-base-200 shadow-sm px-6 py-3 rounded-2xl text-center">
+            <div class="text-xs uppercase tracking-wider font-bold text-gray-400">Heures restantes</div>
+            <div id="stat-restant" class="text-2xl font-black text-orange-500">0h00</div>
+        </div>
+    </div>
+    </div>
     </div>
 
     {# Conteneur du calendrier (Card daisyUI) #}
@@ -72,6 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
         selectOverlap: function(event) {
         return !event.id.startsWith('holiday_');
     },
+    datesSet: function(info) {
+        updateStats(info.startStr, info.endStr);
+    },
         events: "{{ path('hour_entry_events') }}",
         eventDisplay: 'block',
         eventDidMount: function(info) {
@@ -106,5 +113,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     calendar.render();
 });
+
+function updateStats(start, end) {
+    // On appelle notre nouvelle route API
+    const url = `{{ path('hour_entry_stats') }}?start=${start}&end=${end}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('stat-saisie').innerText = data.saisie;
+            document.getElementById('stat-restant').innerText = data.restant;
+        })
+        .catch(error => console.error('Erreur stats:', error));
+}
 </script>
 {% endblock %}

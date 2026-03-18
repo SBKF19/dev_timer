@@ -30,89 +30,195 @@
                     {{ hourEntry.startDate|date('d/m/Y') }}
                 </span>
             </div>
-
+<script>
+    const activityConfig = {
+        {% for choice in form.activity.vars.choices %}
+            "{{ choice.value }}": {{ choice.data.isNeedProject ? 'true' : 'false' }},
+        {% endfor %}
+    };
+</script>
             {{ form_start(form) }}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-control w-full">
-                        {{ form_label(form.startDate, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
-                        {{ form_widget(form.startDate, {'attr': {'class': 'input input-bordered w-full'}}) }}
-                        <div class="text-error text-sm mt-1">{{ form_errors(form.startDate) }}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control w-full">
+                            {{ include('composants/time_picker.html.twig', {
+                                'label': 'Heure de début',
+                                'name': form.startDate.vars.full_name,
+                                'id': form.startDate.vars.id,
+                                'value': form.startDate.vars.data ? form.startDate.vars.data|date('H:i') : '',
+                                'error': form.startDate.vars.errors,
+                                'required': true
+                            }) }}
+                            {% do form.startDate.setRendered %}
+                        </div>
+
+                        <div class="form-control w-full">
+                            {{ include('composants/time_picker.html.twig', {
+                                'label': 'Heure de fin',
+                                'name': form.endDate.vars.full_name,
+                                'id': form.endDate.vars.id,
+                                'value': form.endDate.vars.data ? form.endDate.vars.data|date('H:i') : '',
+                                'error': form.endDate.vars.errors,
+                                'required': true
+                            }) }}
+                            {% do form.endDate.setRendered %}
+                        </div>
                     </div>
-                    <div class="form-control w-full">
-                        {{ form_label(form.endDate, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
-                        {{ form_widget(form.endDate, {'attr': {'class': 'input input-bordered w-full'}}) }}
-                        <div class="text-error text-sm mt-1">{{ form_errors(form.endDate) }}</div>
-                    </div>
                 </div>
 
-                <div class="form-control w-full mt-4">
-                    {{ form_label(form.activity, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
-                    {{ form_widget(form.activity, {'attr': {'class': 'select select-bordered w-full', 'id': 'select-activity'}}) }}
-                    <div class="text-error text-sm mt-1">{{ form_errors(form.project) }}</div>
+                {# --- SECTION ACTIVITÉ --- #}
+                <div class="mb-8" id="activity-wrapper">
+                    {% set selected_activity = null %}
+                    
+                    {# 1. On cherche d'abord si une valeur a été postée (cas de l'erreur) #}
+                    {% if form.activity.vars.value is not empty %}
+                        {% for choice in form.activity.vars.choices %}
+                            {% if choice.value == form.activity.vars.value %}
+                                {% set selected_activity = { id: choice.value, label: choice.label } %}
+                            {% endif %}
+                        {% endfor %}
+                    {# 2. Sinon on prend la donnée de l'entité (cas de l'edit) #}
+                    {% elseif form.activity.vars.data %}
+                        {% set selected_activity = { id: form.activity.vars.data.id, label: form.activity.vars.label } %}
+                    {% endif %}
+
+                    {{ include('composants/select_multi.html.twig', {
+                        'label': 'Activité',
+                        'name': form.activity.vars.full_name,
+                        'placeholder': 'Choisir une activité...',
+                        'multiple': false,
+                        'items': form.activity.vars.choices|map(c => {id: c.value, label: c.label}),
+                        'initial_value': selected_activity ? selected_activity|json_encode : 'null',
+                        'error': form.activity.vars.errors
+                    }) }}
+                    {% do form.activity.setRendered %}
                 </div>
 
-                <div class="form-control w-full mt-4" id="project-container">
-                    {{ form_label(form.project, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
-                    {{ form_widget(form.project, {'attr': {'class': 'select select-bordered w-full'}}) }}
+                {# --- SECTION PROJET --- #}
+                <div class="mb-8" id="project-container" style="display: none;">
+                    {% set selected_project = null %}
+                    
+                    {# 1. On vérifie si un ID de projet a été posté (cas d'erreur de validation) #}
+                    {% if form.project.vars.value is not empty %}
+                        {% for choice in form.project.vars.choices %}
+                            {% if choice.value == form.project.vars.value %}
+                                {% set selected_project = { id: choice.value, label: choice.label } %}
+                            {% endif %}
+                        {% endfor %}
+                    {# 2. Sinon on prend la donnée de l'entité (cas de l'édition) #}
+                    {% elseif form.project.vars.data %}
+                        {% set selected_project = { id: form.project.vars.data.id, label: form.project.vars.name } %}
+                    {% endif %}
+
+                    {{ include('composants/select_multi.html.twig', {
+                        'label': 'Projet',
+                        'name': form.project.vars.full_name,
+                        'placeholder': 'Choisir un projet...',
+                        'multiple': false,
+                        'items': form.project.vars.choices|map(c => {id: c.value, label: c.label}),
+                        'initial_value': selected_project ? selected_project|json_encode : 'null',
+                        'error': form.project.vars.errors
+                    }) }}
+                    {% do form.project.setRendered %}
                 </div>
 
-                <div class="form-control w-full mt-4">
-                    {{ form_label(form.commentary, null, {'label_attr': {'class': 'label-text mb-1'}}) }}
-                    {{ form_widget(form.commentary, {'attr': {'class': 'textarea textarea-bordered w-full'}}) }}
+                <div class="mb-8">
+                    {{ include('composants/textarea.html.twig', {
+                        'label': 'Commentaire',
+                        'name': form.commentary.vars.full_name,
+                        'id': form.commentary.vars.id,
+                        'value': form.commentary.vars.value,
+                        'placeholder': 'Ajouter des détails sur votre intervention...',
+                        'rows': 3,
+                        'error': form.commentary.vars.errors
+                    }) }}
+                    {% do form.commentary.setRendered %}
                 </div>
 
                 <div class="card-actions justify-end mt-8 gap-2">
-                    {% include 'composants/button.html.twig' with {
+                    {{ include('composants/button.html.twig', {
                         'label': 'Annuler',
-                        'btn_type': 'annuler',
+                        'type': 'annuler',
                         'href': path('hour_entry_list')
-                    } %}
+                    }) }}
                     
-                    {% include 'composants/button.html.twig' with {
+                    {{ include('composants/button.html.twig', {
                         'label': editMode ? 'Enregistrer' : 'Confirmer',
-                        'btn_type': 'confirmer'
-                    } %}
+                        'type': 'confirmer'
+                    }) }}
                 </div>
             {{ form_end(form) }}
+            {% if editMode %}
+                    <div class="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 flex justify-between items-center">
+                        <p class="text-red-700 font-medium">Supprimer cet heure</p>
+                        <form method="post" action="{{ path('hour_entry_delete', {'id': hourEntry.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement cette saisie ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ hourEntry.id) }}">
+                            
+                            {{ include('composants/button.html.twig', { 
+                                'type': 'effacer', 
+                                'label': 'Supprimer la saisie' 
+                            }) }}
+                        </form>
+                    </div>
+                {% endif %}
         </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form[name="hour_entry"]');
-    const activitySelect = document.getElementById('select-activity') || document.querySelector('select[id$="_activity"]');
     const projectContainer = document.getElementById('project-container');
-    const projectSelect = projectContainer.querySelector('select');
+    const activityWrapper = document.querySelector('#activity-wrapper [x-data]');
+    
+    // --- NOUVEAU : On cible le composant Alpine du Projet ---
+    const projectWrapper = document.querySelector('#project-container [x-data]');
 
-    function toggleProjectField() {
-        const selectedOption = activitySelect.options[activitySelect.selectedIndex];
-        const needProject = selectedOption ? selectedOption.getAttribute('data-need-project') === '1' : false;
-        
+    function updateProjectVisibility(selectedId) {
+        if (!selectedId) {
+            projectContainer.style.display = 'none';
+            resetProject(); // On vide si aucune activité
+            return;
+        }
+
+        const needProject = activityConfig[selectedId] === true;
         projectContainer.style.display = needProject ? 'block' : 'none';
-        
-        // On ajoute/retire l'attribut required dynamiquement pour le navigateur
-        if (needProject) {
-            projectSelect.setAttribute('required', 'required');
-        } else {
-            projectSelect.removeAttribute('required');
-            projectSelect.value = '';
+
+        // --- NOUVEAU : Si l'activité ne demande pas de projet, on réinitialise ---
+        if (!needProject) {
+            resetProject();
         }
     }
 
-    activitySelect.addEventListener('change', toggleProjectField);
-    toggleProjectField();
-
-    // Sécurité supplémentaire à la soumission
-    form.addEventListener('submit', function(e) {
-        const selectedOption = activitySelect.options[activitySelect.selectedIndex];
-        const needProject = selectedOption ? selectedOption.getAttribute('data-need-project') === '1' : false;
-
-        if (needProject && !projectSelect.value) {
-            e.preventDefault();
-            alert("Veuillez sélectionner un projet pour cette activité.");
+    // Fonction pour vider la sélection du composant Alpine Projet
+    function resetProject() {
+        if (projectWrapper && typeof Alpine !== 'undefined') {
+            const projectData = Alpine.$data(projectWrapper);
+            // On remet la variable 'selected' d'Alpine à null
+            projectData.selected = null;
         }
-    });
+    }
+
+    function initAlpineObserver() {
+        Alpine.effect(() => {
+            const data = Alpine.$data(activityWrapper);
+            if (data && data.selected) {
+                updateProjectVisibility(data.selected.id);
+            } else {
+                updateProjectVisibility(null);
+            }
+        });
+
+        const currentData = Alpine.$data(activityWrapper);
+        if (currentData && currentData.selected) {
+            updateProjectVisibility(currentData.selected.id);
+        }
+    }
+
+    if (typeof Alpine !== 'undefined') {
+        initAlpineObserver();
+    } else {
+        document.addEventListener('alpine:init', initAlpineObserver);
+    }
 });
 </script>
 {% endblock %}

@@ -25,6 +25,15 @@ class HourEntryRepository extends ServiceEntityRepository
         }
     }
 
+    public function remove(HourEntry $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
     //    /**
     //     * @return HourEntry[] Returns an array of HourEntry objects
     //     */
