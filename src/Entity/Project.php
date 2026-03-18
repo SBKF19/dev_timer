@@ -148,11 +148,6 @@ class Project
         return $this->archived_at;
     }
 
-    public function getArchivedAt(): ?\DateTimeInterface
-    {
-        return $this->archived_at;
-    }
-
     public function setArchivedAt(?\DateTimeInterface $archived_at): static
     {
         $this->archived_at = $archived_at;
