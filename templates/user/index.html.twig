@@ -14,6 +14,8 @@
     { id: '1', label: 'Actif' },
     { id: '0', label: 'Inactif' }
 ] %}
+
+{% set nextDirection = currentDirection == 'ASC' ? 'DESC' : 'ASC' %}
     <h1 class="">Gestion des comptes utilisateur</h1>
 
     {{ include('composants/button.html.twig', {type: 'confirmer', label: '+ Ajouter un utilisateur',href: path('user_add'),}) }}    
@@ -65,19 +67,39 @@
     <div class ="">
     <table class="table table-striped table-bordered">
             <thead class="table-dark">
-                <tr>
-                    <th>Nom</th>
-                    <th>Prénom</th>
-                    <th>Email</th>
-                    <th>Dernière connexion</th>
-                    <th>Statut</th>
-                    <th>Rôle</th>
-                    <th>Date d'embauche</th>
-                    <th>Date fin contrat</th>
-                    <th>Couleur</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
+    <tr>
+        <th>
+            <a href="{{ path('user_list', app.request.query.all|merge({'sort': 'lastname', 'direction': (currentSort == 'lastname' and currentDirection == 'ASC') ? 'DESC' : 'ASC'})) }}">
+                Nom {{ currentSort == 'lastname' ? (currentDirection == 'ASC' ? '▲' : '▼') }}
+            </a>
+        </th>
+        <th>
+            <a href="{{ path('user_list', app.request.query.all|merge({'sort': 'firstname', 'direction': (currentSort == 'firstname' and currentDirection == 'ASC') ? 'DESC' : 'ASC'})) }}">
+                Prénom {{ currentSort == 'firstname' ? (currentDirection == 'ASC' ? '▲' : '▼') }}
+            </a>
+        </th>
+        <th>Email</th>
+        <th>
+            <a href="{{ path('user_list', app.request.query.all|merge({'sort': 'last_login', 'direction': (currentSort == 'last_login' and currentDirection == 'ASC') ? 'DESC' : 'ASC'})) }}">
+                Dernière connexion {{ currentSort == 'last_login' ? (currentDirection == 'ASC' ? '▲' : '▼') }}
+            </a>
+        </th>
+        <th>Statut</th>
+        <th>Rôle</th>
+        <th>
+            <a href="{{ path('user_list', app.request.query.all|merge({'sort': 'hired_date', 'direction': (currentSort == 'hired_date' and currentDirection == 'ASC') ? 'DESC' : 'ASC'})) }}">
+                Embauche {{ currentSort == 'hired_date' ? (currentDirection == 'ASC' ? '▲' : '▼') }}
+            </a>
+        </th>
+        <th>
+        <a href="{{ path('user_list', app.request.query.all|merge({'sort': 'contract_end_date', 'direction': (currentSort == 'contract_end_date' and currentDirection == 'ASC') ? 'DESC' : 'ASC'})) }}">
+                Date fin contrat {{ currentSort == 'contract_end_date' ? (currentDirection == 'ASC' ? '▲' : '▼') }}
+        </a>
+        </th>
+        <th>Couleur</th>
+        <th>Action</th>
+    </tr>
+</thead>
             <tbody>
                 {% for user in users %}
                     <tr>                        

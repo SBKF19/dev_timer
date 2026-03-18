@@ -53,21 +53,21 @@ class Project
     /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'projects')]
+    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'projects')]
     private Collection $usersInProject;
 
     /**
      * @var Collection<int, HourEntry>
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'link')]
-    private Collection $link;
+    #[ORM\OneToMany(mappedBy: 'project', targetEntity: HourEntry::class)]
+    private Collection $hourEntries;
 
     public function __construct()
     {
         $this->usersInProject = new ArrayCollection();
         $this->link = new ArrayCollection();
         $this->created_at = new DateTimeImmutable();
-
+        $this->hourEntries = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -79,6 +79,7 @@ class Project
     {
         return $this->name;
     }
+
     public function setName(string $name): static
     {
         $this->name = $name;
@@ -89,6 +90,7 @@ class Project
     {
         return $this->description;
     }
+
     public function setDescription(?string $description): static
     {
         $this->description = $description;
@@ -110,6 +112,7 @@ class Project
     {
         return $this->manager;
     }
+
     public function setManager(?User $manager): static
     {
         $this->manager = $manager;
@@ -128,6 +131,7 @@ class Project
             $this->usersInProject->add($user);
             $user->addProject($this);
         }
+
         return $this;
     }
 
@@ -136,6 +140,7 @@ class Project
         if ($this->usersInProject->removeElement($user)) {
             $user->removeProject($this);
         }
+
         return $this;
     }
     public function getArchivedAt(): ?DateTimeImmutable
@@ -143,7 +148,12 @@ class Project
         return $this->archived_at;
     }
 
-    public function setArchivedAt(?DateTimeImmutable $archived_at): static
+    public function getArchivedAt(): ?\DateTimeInterface
+    {
+        return $this->archived_at;
+    }
+
+    public function setArchivedAt(?\DateTimeInterface $archived_at): static
     {
         $this->archived_at = $archived_at;
         return $this;
@@ -174,26 +184,26 @@ class Project
     /**
      * @return Collection<int, HourEntry>
      */
-    public function getLink(): Collection
+    public function getHourEntries(): Collection
     {
-        return $this->link;
+        return $this->hourEntries;
     }
 
-    public function addLink(HourEntry $link): static
+    public function addHourEntry(HourEntry $hourEntry): static
     {
-        if (!$this->link->contains($link)) {
-            $this->link->add($link);
-            $link->setLink($this);
+        if (!$this->hourEntries->contains($hourEntry)) {
+            $this->hourEntries->add($hourEntry);
+            $hourEntry->setProject($this);
         }
 
         return $this;
     }
 
-    public function removeLink(HourEntry $link): static
+    public function removeHourEntry(HourEntry $hourEntry): static
     {
-        if ($this->link->removeElement($link)) {
-            if ($link->getLink() === $this) {
-                $link->setLink(null);
+        if ($this->hourEntries->removeElement($hourEntry)) {
+            if ($hourEntry->getProject() === $this) {
+                $hourEntry->setProject(null);
             }
         }
 

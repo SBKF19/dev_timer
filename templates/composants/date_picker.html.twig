@@ -30,4 +30,11 @@
             {% if attr is defined %}{% for key, val in attr %} {{ key }}="{{ val }}" {% endfor %}{% endif %}
         />
 	</div>
+	{% if error is defined and error|length > 0 %}
+		<div class="text-red-500 text-sm mt-2">
+			{% for err in error %}
+				<div>{{ err.message }}</div>
+			{% endfor %}
+		</div>
+	{% endif %}
 </div>

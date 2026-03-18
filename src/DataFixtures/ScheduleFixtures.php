@@ -11,15 +11,15 @@ class ScheduleFixtures extends Fixture
     public static function data(): array
     {
         return [
-            ['day' => '1', 'startTime' => '09:00', 'endTime' => '12:00'],
-            ['day' => '1', 'startTime' => '13:00', 'endTime' => '17:00'],
-            ['day' => '2', 'startTime' => '08:00', 'endTime' => '11:30'],
-            ['day' => '2', 'startTime' => '13:00', 'endTime' => '16:30'],
-            ['day' => '3', 'startTime' => '10:00', 'endTime' => '13:00'],
-            ['day' => '3', 'startTime' => '14:00', 'endTime' => '17:30'],
-            ['day' => '4', 'startTime' => '09:30', 'endTime' => '12:00'],
-            ['day' => '4', 'startTime' => '14:00', 'endTime' => '18:00'],
-            ['day' => '5', 'startTime' => '09:30', 'endTime' => '13:00'],
+            ['day' => '1', 'period' => 'Matin', 'startTime' => '09:00', 'endTime' => '12:00'],
+            ['day' => '1', 'period' => 'Après-midi', 'startTime' => '13:00', 'endTime' => '17:00'],
+            ['day' => '2', 'period' => 'Matin', 'startTime' => '08:00', 'endTime' => '11:30'],
+            ['day' => '2', 'period' => 'Après-midi', 'startTime' => '13:00', 'endTime' => '16:30'],
+            ['day' => '3', 'period' => 'Matin', 'startTime' => '10:00', 'endTime' => '13:00'],
+            ['day' => '3', 'period' => 'Après-midi', 'startTime' => '14:00', 'endTime' => '17:30'],
+            ['day' => '4', 'period' => 'Matin', 'startTime' => '09:30', 'endTime' => '12:00'],
+            ['day' => '4', 'period' => 'Après-midi', 'startTime' => '14:00', 'endTime' => '18:00'],
+            ['day' => '5', 'period' => 'Matin', 'startTime' => '09:30', 'endTime' => '13:00'],
         ];
     }
 
@@ -29,6 +29,7 @@ class ScheduleFixtures extends Fixture
 
                 $schedule = new Schedule();
                 $schedule->setDayOfWeek($data['day']);
+                $schedule->setPeriod($data['period']);
                 $schedule->setStartTime(new \DateTime($data['startTime']));
                 $schedule->setEndTime(new \DateTime($data['endTime']));
                 $manager->persist($schedule);
