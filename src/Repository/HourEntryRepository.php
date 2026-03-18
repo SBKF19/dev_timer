@@ -33,6 +33,33 @@ class HourEntryRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
+    /**
+     * Vérifie s'il existe une saisie qui chevauche la période donnée pour un utilisateur
+     */
+    public function hasOverlappingEntry(
+        \App\Entity\User $user, 
+        \DateTimeInterface $start, 
+        \DateTimeInterface $end, 
+        ?int $ignoreId = null
+    ): bool {
+        $qb = $this->createQueryBuilder('h')
+            ->select('COUNT(h.id)')
+            ->where('h.user = :user')
+            // Logique de chevauchement : (Debut1 < Fin2) ET (Fin1 > Debut2)
+            ->andWhere('h.startDate < :end')
+            ->andWhere('h.endDate > :start')
+            ->setParameter('user', $user)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
+
+        // Si on est en mode édition, on exclut l'ID actuel
+        if ($ignoreId) {
+            $qb->andWhere('h.id != :id')
+               ->setParameter('id', $ignoreId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
 
     //    /**
     //     * @return HourEntry[] Returns an array of HourEntry objects

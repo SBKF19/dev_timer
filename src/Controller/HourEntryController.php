@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Service\TimeStatsService;
 
 #[Route('/hour-entry', name: 'hour_entry_')]
 final class HourEntryController extends AbstractController
@@ -163,9 +164,9 @@ final class HourEntryController extends AbstractController
                 (int)$dateReference->format('Y'), (int)$dateReference->format('m'), (int)$dateReference->format('d')
             );
 
-            if ($this->checkOverlap($hourEntry, $hourEntryRepository)) {
+            if ($hourEntryRepository->hasOverlappingEntry($this->getUser(), $hourEntry->getStartDate(), $hourEntry->getEndDate())) {
                 $this->addFlash('error', 'Chevauchement détecté.');
-            } else {
+            }else {
                 $hourEntryRepository->save($hourEntry, true);
                 $this->addFlash('success', 'Saisie ajoutée !');
                 return $this->redirectToRoute('hour_entry_list');
@@ -219,8 +220,8 @@ final class HourEntryController extends AbstractController
             );
 
             // 4. Vérification finale du chevauchement (Overlap)
-            if ($this->checkOverlap($hourEntry, $hourEntryRepository)) {
-                $this->addFlash('error', 'Attention : Cette modification crée un chevauchement avec une autre saisie.');
+            if ($hourEntryRepository->hasOverlappingEntry($this->getUser(), $hourEntry->getStartDate(), $hourEntry->getEndDate(), $hourEntry->getId())) {
+                $this->addFlash('error', 'Attention : Cette modification crée un chevauchement.');
             } else {
                 $hourEntryRepository->save($hourEntry, true);
                 $this->addFlash('success', 'Saisie horaire modifiée avec succès !');
@@ -250,103 +251,18 @@ final class HourEntryController extends AbstractController
         return $this->redirectToRoute('hour_entry_list');
     }
 
-    private function checkOverlap(HourEntry $entry, HourEntryRepository $repository): bool
-    {
-        $userId = $this->getUser()->getId();
-        $start = $entry->getStartDate();
-        $end = $entry->getEndDate();
-        $entryId = $entry->getId(); // NULL en mode add, un chiffre en mode edit
-
-        // On cherche une saisie qui se chevauche
-        $overlapping = $repository->createQueryBuilder('h')
-            ->where('h.user = :user')
-            ->andWhere('h.startDate < :end')
-            ->andWhere('h.endDate > :start')
-            ->setParameter('user', $userId)
-            ->setParameter('start', $start)
-            ->setParameter('end', $end);
-
-        // En mode édition, on exclut la saisie actuelle de la recherche !
-        if ($entryId) {
-            $overlapping->andWhere('h.id != :id')
-                        ->setParameter('id', $entryId);
-        }
-
-        return count($overlapping->getQuery()->getResult()) > 0;
-    }
 
    #[Route('/stats', name: 'stats', methods: ['GET'])]
-        public function getStats(
-            Request $request, 
-            HourEntryRepository $hourEntryRepository, 
-            ScheduleRepository $scheduleRepository,
-            HolidayRepository $holidayRepository
-        ): JsonResponse {
-            $startParam = $request->query->get('start');
-            $endParam = $request->query->get('end');
+    public function getStats(Request $request, TimeStatsService $statsService): JsonResponse 
+    {
+        $startParam = explode(' ', $request->query->get('start', 'now'))[0];
+        $endParam = explode(' ', $request->query->get('end', 'now'))[0];
 
-            // 1. Nettoyage des dates pour éviter le "Double time specification"
-            $startParam = $startParam ? explode(' ', $startParam)[0] : 'now';
-            $endParam = $endParam ? explode(' ', $endParam)[0] : 'now';
+        $startDate = new \DateTime($startParam);
+        $endDate = new \DateTime($endParam);
 
-            $startDate = new \DateTime($startParam);
-            $endDate = new \DateTime($endParam);
-            
-            // --- INITIALISATION DES VARIABLES (Important pour éviter le Undefined variable) ---
-            $totalTheoreticalMinutes = 0;
-            $totalSaisieMinutes = 0;
+        $stats = $statsService->getWeeklyStats($this->getUser(), $startDate, $endDate);
 
-            // 2. Calcul des heures théoriques (Schedules)
-            $schedules = $scheduleRepository->findAll();
-            
-            // On boucle sur chaque jour de la période (ex: du lundi au dimanche)
-            $period = new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate);
-            
-            foreach ($period as $date) {
-                $dayOfWeek = (int)$date->format('N'); // 1 (lundi) à 7 (dimanche)
-                
-                // On vérifie si ce jour précis est férié
-                $isHoliday = $holidayRepository->findOneBy(['date' => $date]);
-                if ($isHoliday) {
-                    continue; // On passe au jour suivant, on ne compte pas d'heures à bosser
-                }
-
-                // On ajoute les minutes prévues dans le planning pour ce jour de la semaine
-                foreach ($schedules as $s) {
-                    if ($s->getDayOfWeek() === $dayOfWeek) {
-                        $start = $s->getStartTime();
-                        $end = $s->getEndTime();
-                        
-                        if ($start && $end) {
-                            $diff = $start->diff($end);
-                            $totalTheoreticalMinutes += ($diff->h * 60) + $diff->i;
-                        }
-                    }
-                }
-            }
-
-            // 3. Calcul des heures déjà saisies par l'utilisateur
-            $entries = $hourEntryRepository->createQueryBuilder('h')
-                ->where('h.user = :user')
-                ->andWhere('h.startDate >= :start')
-                ->andWhere('h.endDate <= :end')
-                ->setParameter('user', $this->getUser())
-                ->setParameter('start', $startDate)
-                ->setParameter('end', $endDate)
-                ->getQuery()
-                ->getResult();
-
-            foreach ($entries as $entry) {
-                $diff = $entry->getStartDate()->diff($entry->getEndDate());
-                $totalSaisieMinutes += ($diff->h * 60) + $diff->i;
-            }
-
-            // 4. Calcul du restant (on ne descend pas en dessous de 0)
-            $restantMinutes = max(0, $totalTheoreticalMinutes - $totalSaisieMinutes);
-
-            return new JsonResponse([
-                'saisie' => sprintf('%dh%02d', floor($totalSaisieMinutes / 60), $totalSaisieMinutes % 60),
-                'restant' => sprintf('%dh%02d', floor($restantMinutes / 60), $restantMinutes % 60),
-            ]);
-        }
+        return new JsonResponse($stats);
+    }
 }
