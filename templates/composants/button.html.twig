@@ -3,6 +3,7 @@
 {% set btn_size = size|default(null) %}
 {% set btn_type = type|default('confirmer')|lower %}
 {% set href = href|default(null) %}
+{% set attr = attr|default({}) %}
 
 {# 2. Construction de la classe de base #}
 {% set base_class = 'btn ' ~ (is_outline ? 'btn-outline ' : '') ~ (btn_size ? 'btn-' ~ btn_size : '') %}
@@ -19,11 +20,21 @@
 {% set final_class = base_class ~ ' ' ~ button_variant ~ ' ' ~ class|default('') %}
 
 {% if href %}
-    <a href="{{ href }}" class="{{ final_class }}">
+    <a href="{{ href }}" class="{{ final_class }}" 
+        {% for name, value in attr %}
+            {{ name }}="{{ value }}"
+        {% endfor %}>
         {{ label|default('Lien') }}
     </a>
 {% else %}
-    <button type="submit" class="{{ final_class }}">
+    {# On récupère le type (button ou submit) depuis attr, sinon 'submit' par défaut #}
+    <button type="{{ attr.type|default('submit') }}" class="{{ final_class }}"
+        {% for name, value in attr %}
+            {# On boucle sur les attributs mais on ignore 'type' car on l'a déjà écrit au-dessus #}
+            {% if name != 'type' %}
+                {{ name }}="{{ value }}"
+            {% endif %}
+        {% endfor %}>
         {{ label|default('Bouton') }}
     </button>
 {% endif %}

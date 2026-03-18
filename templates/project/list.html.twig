@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des projets
+{% endblock %}
+
+{% block body %}
+	<div class="container mx-auto p-6">
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold text-gray-800">Projets</h1>
+			{% include 'composants/button.html.twig' with {
+            href: path('app_project_new'),
+            label: '+ Nouveau projet',
+            type: 'confirmer',
+            class: 'shadow-sm'
+        } %}
+		</div>
+
+		<div class="overflow-x-auto w-full border border-gray-200 rounded-xl shadow-sm">
+			<table
+				class="table w-full text-left border-collapse">
+				{# En-tête du tableau #}
+				<thead class="bg-gray-200">
+					<tr>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider">Nom</th>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider">Description</th>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider">Date de création</th>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider">Responsable</th>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider">Développeurs</th>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider">Statut</th>
+						<th class="text-black text-[15px] font-semibold py-4 px-4 uppercase tracking-wider text-center">Actions</th>
+					</tr>
+				</thead>
+
+				{# Corps du tableau #}
+				<tbody class="bg-white">
+					{% for project in projects %}
+						<tr
+							class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-none">
+
+							{# Nom #}
+							<td class="text-gray-900 font-medium py-4 px-4">
+								{{ project.name }}
+							</td>
+
+							{# Description (Tronquée à 50 caractères pour éviter de casser le tableau) #}
+							<td class="text-gray-700 py-4 px-4">
+								{% if project.description %}
+									{{ project.description|length > 50 ? project.description|slice(0, 50) ~ '...' : project.description }}
+								{% else %}
+									<span class="text-gray-400 italic">Aucune</span>
+								{% endif %}
+							</td>
+
+							{# Date de création #}
+							<td class="text-gray-700 py-4 px-4">
+								{{ project.createdAt|date('d/m/Y') }}
+							</td>
+
+							{# Responsable (Format: P. Nom) #}
+							<td class="text-gray-700 py-4 px-4 whitespace-nowrap">
+								{% if project.manager %}
+									{{ project.manager.firstName|first|upper }}.
+									{{ project.manager.lastName }}
+								{% else %}
+									<span class="text-gray-400">-</span>
+								{% endif %}
+							</td>
+
+							{# Développeurs (Boucle sur usersInProject avec format P. Nom) #}
+							<td class="text-gray-700 py-4 px-4">
+								<div class="flex flex-wrap gap-1">
+									{% for dev in project.usersInProject %}
+										<span class="inline-block bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-700">
+											{{ dev.firstName|first|upper }}.
+											{{ dev.lastName }}
+										</span>
+									{% else %}
+										<span class="text-gray-400 italic">Aucun développeur</span>
+									{% endfor %}
+								</div>
+							</td>
+
+							{# Statut (Utilise ta méthode isActive()) #}
+							<td class="text-gray-700 py-4 px-4">
+								{% if project.isActive() %}
+									<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">En cours</span>
+								{% else %}
+									<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-semibold">Archivé</span>
+								{% endif %}
+							</td>
+
+							{# Colonne Actions (Bouton d'édition) #}
+							<td class="text-center py-4 px-4">
+								<a href="{{ path('app_project_edit', {id: project.id}) }}" class="inline-flex items-center justify-center text-gray-400 hover:text-blue-600 transition-colors" title="Éditer le projet">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewbox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+									</svg>
+								</a>
+							</td>
+						</tr>
+					{% else %}
+						{# Si la table est vide #}
+						<tr>
+							<td colspan="7" class="text-center py-10 text-gray-400 italic">
+								Aucun projet disponible pour le moment.
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+{% endblock %}
