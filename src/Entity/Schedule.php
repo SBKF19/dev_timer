@@ -23,7 +23,7 @@ class Schedule
     #[ORM\Column]
     private ?int $dayOfWeek = null;
 
-    #[ORM\Column(length: 25)]
+    #[ORM\Column(name: "`period`", length: 25)]
     private ?string $period = null;
 
     #[ORM\Column(nullable: true)]
