@@ -13,6 +13,7 @@ use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
+use App\Repository\UserRepository;
 
 class ProjectType extends AbstractType
 {
@@ -47,6 +48,13 @@ class ProjectType extends AbstractType
                 'label' => 'Responsable de projet - champ obligatoire',
                 'choice_label' => 'lastname',
                 'placeholder' => 'Sélectionnez un responsable de projet',
+                'query_builder' => function (UserRepository $er) {
+                    return $er->createQueryBuilder('u')
+                        ->join('u.role', 'r') // On joint la table/entité Role
+                        ->where('r.label = :roleLabel')
+                        ->setParameter('roleLabel', 'Responsable')
+                        ->orderBy('u.lastname', 'ASC');
+                },
             ])
         ;
     }
