@@ -2,6 +2,11 @@
 
 {% block title %}Calendrier des saisies{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('styles/calendar.css') }}">
+{% endblock %}
+
 {% block body %}
 <div class="p-6 max-w-7xl mx-auto">
     {# En-tête avec daisyUI #}
@@ -25,105 +30,24 @@
     {# Conteneur du calendrier (Card daisyUI) #}
     <div class="card bg-base-100 shadow-xl border border-base-200">
         <div class="card-body p-4 md:p-8">
-            <div id='calendar' class="min-h-[600px]"></div>
+            <div id='calendar' 
+                 class="min-h-[600px]"
+                 data-events-url="{{ path('hour_entry_events') }}"
+                 data-add-url="{{ path('hour_entry_add') }}"
+                 data-edit-url="{{ path('hour_entry_edit', {'id': 'PLACEHOLDER'}) }}"
+                 data-stats-url="{{ path('hour_entry_stats') }}"
+                 data-business-hours="{{ businessHours|json_encode }}"
+                 data-min-time="{{ minTime }}"
+                 data-max-time="{{ maxTime }}"
+            ></div>
         </div>
     </div>
 </div>
 
-{# Styles personnalisés pour intégrer FullCalendar au thème DaisyUI #}
-<style>
-    .fc-event-main, .fc-event-main-frame {
-        background: transparent !important;
-    }
-    
-    .fc-v-event {
-        border: none !important;
-    }
-
-    .fc-event-title {
-        color: #ffffff !important;
-        font-weight: 600;
-    }
-</style>
 {% endblock %}
 
 {% block javascripts %}
 {{ parent() }}
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const calendarEl = document.getElementById('calendar');
-    
-    // On récupère les données envoyées par le controller
-    const businessHoursFromDb = {{ businessHours|json_encode|raw }};
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        locale: 'fr',
-        firstDay: 1,
-        weekends: false,
-        allDaySlot: false,
-        slotMinTime: '{{ minTime }}', 
-        slotMaxTime: '{{ maxTime }}',
-        businessHours: {{ businessHours|json_encode|raw }}, 
-        selectConstraint: 'businessHours',
-        
-        selectable: true,
-         // Empêche de sélectionner une plage horaire si elle chevauche un jour férié
-        // On vérifie si l'ID de l'événement qui "gêne" commence par 'holiday_'
-        selectOverlap: function(event) {
-        return !event.id.startsWith('holiday_');
-    },
-    datesSet: function(info) {
-        updateStats(info.startStr, info.endStr);
-    },
-        events: "{{ path('hour_entry_events') }}",
-        eventDisplay: 'block',
-        eventDidMount: function(info) {
-        if (info.event.backgroundColor) {
-            // On force le style directement sur l'élément DOM
-            info.el.style.setProperty('background-color', info.event.backgroundColor, 'important');
-            info.el.style.setProperty('border-color', info.event.backgroundColor, 'important');
-        }
-    },
-
-        select: function(info) {
-            const start = info.startStr;
-            const end = info.endStr;
-            window.location.href = `{{ path('hour_entry_add') }}?start=${start}&end=${end}`;
-        },
-
-        eventClick: function(info) {
-            const eventId = info.event.id;
-
-        // Si c'est un jour férié, on ne fait rien
-        if (eventId.startsWith('holiday_')) {
-            return;
-        }
-
-        // On retire le préfixe 'entry_' pour ne garder que le chiffre (ex: 'entry_41' -> '41')
-        const numericId = eventId.replace('entry_', '');
-        
-        const url = "{{ path('hour_entry_edit', {'id': 'PLACEHOLDER'}) }}".replace('PLACEHOLDER', numericId);
-        window.location.href = url;
-            }
-    });
-
-    calendar.render();
-});
-
-function updateStats(start, end) {
-    // On appelle notre nouvelle route API
-    const url = `{{ path('hour_entry_stats') }}?start=${start}&end=${end}`;
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('stat-saisie').innerText = data.saisie;
-            document.getElementById('stat-restant').innerText = data.restant;
-        })
-        .catch(error => console.error('Erreur stats:', error));
-}
-</script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <script src="{{ asset('js/calendar-init.js') }}"></script>
 {% endblock %}

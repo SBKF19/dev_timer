@@ -25,6 +25,7 @@ class ScheduleFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
         {
+            $startDate = new \DateTime('2026-01-01 08:00:00');
             foreach (self::data() as $index => $data) {
 
                 $schedule = new Schedule();
@@ -32,6 +33,9 @@ class ScheduleFixtures extends Fixture
                 $schedule->setPeriod($data['period']);
                 $schedule->setStartTime(new \DateTime($data['startTime']));
                 $schedule->setEndTime(new \DateTime($data['endTime']));
+                if (method_exists($schedule, 'setCreatedAt')) {
+                    $schedule->setCreatedAt($startDate);
+                }
                 $manager->persist($schedule);
             }
             $manager->flush();

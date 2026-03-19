@@ -26,13 +26,19 @@ class TimeStatsService
         
         foreach ($period as $date) {
             $dayOfWeek = (int)$date->format('N');
+
             if ($this->holidayRepository->findOneBy(['date' => $date])) {
                 continue;
             }
 
+            $schedules = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $date);
+
             foreach ($schedules as $s) {
-                if ($s->getDayOfWeek() === $dayOfWeek) {
-                    $diff = $s->getStartTime()->diff($s->getEndTime());
+                $start = $s->getStartTime();
+                $end = $s->getEndTime();
+                
+                if ($start && $end) {
+                    $diff = $start->diff($end);
                     $totalTheoreticalMinutes += ($diff->h * 60) + $diff->i;
                 }
             }

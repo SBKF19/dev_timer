@@ -29,6 +29,25 @@ class Schedule
     #[ORM\Column(nullable: true)]
     private ?\DateTime $deleted_at = null;
 
+    #[ORM\Column]
+    private ?\DateTime $createdAt = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
+
+    public function getCreatedAt(): ?\DateTime
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTime $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
     public function getId(): ?int
     {
         return $this->id;

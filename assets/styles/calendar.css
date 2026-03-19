@@ -1,0 +1,12 @@
+.fc-event-main, .fc-event-main-frame {
+    background: transparent !important;
+}
+
+.fc-v-event {
+    border: none !important;
+}
+
+.fc-event-title {
+    color: #ffffff !important;
+    font-weight: 600;
+}
