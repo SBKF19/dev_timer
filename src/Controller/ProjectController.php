@@ -79,6 +79,11 @@ class ProjectController extends AbstractController
     {
         // Vérification du token CSRF pour empêcher les failles de sécurité
         if ($this->isCsrfTokenValid('delete' . $project->getId(), $request->request->get('_token'))) {
+
+            if (!$project->getHourEntries()->isEmpty()) {
+                $this->addFlash('error', 'Impossible de supprimer ce projet : des heures y sont déjà rattachées.');
+                return $this->redirectToRoute('app_project');
+            }
             $em->remove($project);
             $em->flush();
 
