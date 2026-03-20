@@ -58,7 +58,7 @@
                                                     <img src="{{ asset('images/modify_icone.png') }}" class="w-5 h-5">
                                                 </a>
                                                 <form method="post" action="{{ path('app_schedule_delete', {'id': schedule[0].id}) }}" onsubmit="return confirm('Supprimer ?');" style="display:inline;">
-                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule') }}">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ schedule[0].id) }}">
                                                     <button type="submit" class="align-middle">
                                                         <img src="{{ asset('images/remove_icone.png') }}" alt="Supprimer" class="w-5 h-5 object-contain">
                                                     </button>
@@ -87,7 +87,7 @@
                                                     <img src="{{ asset('images/modify_icone.png') }}" class="w-5 h-5">
                                                 </a>
                                                 <form method="post" action="{{ path('app_schedule_delete', {'id': aprem.id}) }}" onsubmit="return confirm('Supprimer ?');" style="display:inline;">
-                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule') }}">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ aprem.id) }}">
                                                     <button type="submit" class="align-middle">
                                                         <img src="{{ asset('images/remove_icone.png') }}" alt="Supprimer" class="w-5 h-5 object-contain">
                                                     </button>

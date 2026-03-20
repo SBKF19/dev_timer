@@ -9,9 +9,9 @@
         <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Gestion des jours fériés</h1>
         <h2 class="text-[#000000] text-lg font-semibold mb-10">Modification du jour férié</h2>
 
-        {{ form_start(holidayForm, { attr: { id: 'holiday_form_edit'} }) }}
+        {{ form_start(HolidayFormType, { attr: { id: 'holiday_form_edit'} }) }}
             {{ include("form/form_holiday.html.twig") }}
-        {{ form_end(holidayForm) }}
+        {{ form_end(HolidayFormType) }}
 
         <div class="flex flex-row justify-between items-center mt-12 gap-6">
 

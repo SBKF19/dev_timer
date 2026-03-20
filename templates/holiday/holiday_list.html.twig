@@ -1,60 +1,64 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-<div class="p-12 bg-gray-50 min-h-screen">
-    <div class="bg-white rounded-xl border border-[#E3E3E3] shadow-sm overflow-hidden">
+<div class="p-12 bg-white min-h-screen font-sans">
+    <div class="flex justify-between items-center mb-10">
+        <h1 class="text-2xl font-bold text-[#1F384C]">Gestion des jours fériés</h1>
+        <a href="{{ path('app_holiday_add') }}" class="btn btn-primary bg-[#2A7DE3] border-none text-white normal-case px-6 hover:bg-[#18355F] rounded-lg">
+            Ajouter un jour férié
+        </a>
+    </div>
 
-        <div class="p-6 border-b border-[#E3E3E3]">
-            <h1 class="text-[#1F384C] text-xl font-bold italic">Liste des jours fériés</h1>
-        </div>
+    <div class="border-b border-[#E3E3E3] mb-12">
+        <h1 class="text-[#475E80] text-sm font-semibold italic pb-2 ml-4">Liste des jours fériés</h1>
+    </div>
 
-        <div class="p-8">
-            <table class="w-full border-collapse border border-[#D1D1D1] text-center">
-                <thead class="bg-[#F9F9F9]">
-                    <tr>
-                        <th class="border border-[#D1D1D1] py-3 font-medium text-[#1F384C] w-1/4">Date</th>
-                        <th class="border border-[#D1D1D1] py-3 font-medium text-[#1F384C] w-1/4">Nom</th>
-                        <th class="border border-[#D1D1D1] py-3 font-medium text-[#1F384C] w-1/4">Année</th>
-                        <th class="border border-[#D1D1D1] py-3 font-medium text-[#1F384C] w-1/4">Action</th>
+    <div class="max-w-6xl mx-auto">
+        <div class="rounded-xl border border-[#D1D1D1] overflow-hidden">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="text-[#1F384C] bg-gray-50">
+                        <th class="py-4 border-b border-r border-[#D1D1D1] font-bold w-1/4">Date</th>
+                        <th class="py-4 border-b border-r border-[#D1D1D1] font-bold w-1/4">Nom</th>
+                        <th class="py-4 border-b border-r border-[#D1D1D1] font-bold w-1/4">Année</th>
+                        <th class="py-4 border-b border-[#D1D1D1] font-bold w-1/4">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="text-[#1F384C]">
                     {% set months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
 
                     {% for year, holidays in groupedHolidays %}
                         {% for holiday in holidays %}
-                            <tr>
-                                {# Colonne Date #}
-                                <td class="border border-[#D1D1D1] py-4 text-[#1F384C]">
+                            {% set isNewYear = loop.first %}
+                            {% set isNotFirstRow = not (isNewYear and loop.parent.loop.first) %}
+
+                            <tr class="text-center hover:bg-gray-50 transition-colors {{ isNewYear and isNotFirstRow ? 'border-t-2 border-t-[#D1D1D1]' : '' }}">
+                                <td class="py-4 border-b border-r border-[#D1D1D1] text-sm">
                                     {{ holiday.date|date('j') }} {{ months[holiday.date|date('n')] }}
                                 </td>
 
-                                {# Colonne Nom #}
-                                <td class="border border-[#D1D1D1] py-4 text-[#1F384C]">
+                                <td class="py-4 border-b border-r border-[#D1D1D1] text-sm">
                                     {{ holiday.name }}
                                 </td>
 
-                                {# Colonne Année : On ne l'affiche QUE pour la première ligne de l'année #}
                                 {% if loop.first %}
-                                    <td class="border border-[#D1D1D1] py-4 text-[#1F384C] font-semibold bg-white"
+                                    <td class="py-4 border-r border-[#D1D1D1] font-bold align-middle bg-white"
                                         rowspan="{{ holidays|length }}">
                                         {{ year }}
                                     </td>
                                 {% endif %}
 
-                                {# Colonne Action #}
-                                <td class="border border-[#D1D1D1] py-4">
-                                    <div class="flex justify-center gap-4">
-                                        <a href="{{ path('app_holiday_edit', {id: holiday.id}) }}" class="text-gray-500 hover:text-blue-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
+                                <td class="py-4 border-b border-[#D1D1D1]">
+                                    <div class="flex justify-center items-center gap-4">
+                                        <a href="{{ path('app_holiday_edit', {id: holiday.id}) }}" title="Modifier">
+                                            <img src="{{ asset('images/modify_icone.png') }}" class="w-4 h-4 hover:scale-110 transition-transform">
                                         </a>
-                                        <button class="text-gray-500 hover:text-red-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                                        <form method="post" action="{{ path('app_holiday_delete', {id: holiday.id}) }}" onsubmit="return confirm('Supprimer ce jour férié ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ holiday.id) }}">
+                                            <button type="submit" title="Supprimer">
+                                                <img src="{{ asset('images/remove_icone.png') }}" class="w-4 h-4 hover:scale-110 transition-transform">
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -65,4 +69,15 @@
         </div>
     </div>
 </div>
+
+<style>
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    .border-t-2 td {
+        border-top-width: 2px;
+        border-top-color: #D1D1D1;
+    }
+</style>
 {% endblock %}
