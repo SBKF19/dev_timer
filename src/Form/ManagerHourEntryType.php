@@ -29,7 +29,7 @@ class ManagerHourEntryType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            // 1. CHOIX DU DÉVELOPPEUR (Nouveau pour Manager)
+            // 1. CHOIX DU DÉVELOPPEUR
             ->add('user', EntityType::class, [
                 'class' => User::class,
                 'choice_label' => function(User $user) {
@@ -38,7 +38,7 @@ class ManagerHourEntryType extends AbstractType
                 'label' => 'Développeur',
                 'placeholder' => 'Sélectionner le développeur',
             ])
-            // 2. CHOIX DE LA DATE (Nouveau pour Manager)
+            // 2. CHOIX DE LA DATE
             ->add('entryDate', DateType::class, [
                 'mapped' => false, // On fusionnera avec startDate/endDate dans le contrôleur
                 'widget' => 'single_text',
@@ -83,58 +83,71 @@ class ManagerHourEntryType extends AbstractType
             'default_date' => new \DateTime(),
             'constraints' => [
                 new Callback(function (HourEntry $hourEntry, ExecutionContextInterface $context) use ($scheduleRepo) {
-                    $activity = $hourEntry->getActivity();
-                    $project = $hourEntry->getProject();
+    $activity = $hourEntry->getActivity();
+    $project = $hourEntry->getProject();
 
-                    // 1. Vérification projet obligatoire
-                    if ($activity && $activity->isNeedProject() && !$project) {
-                        $context->buildViolation('Cette activité nécessite un projet.')
-                            ->atPath('project')->addViolation();
-                    }
+    // 1. Vérification projet obligatoire (Ton code est bon)
+    if ($activity && $activity->isNeedProject() && !$project) {
+        $context->buildViolation('Cette activité nécessite un projet.')
+            ->atPath('project')->addViolation();
+    }
 
-                    // 2. Cohérence des heures
-                    if ($hourEntry->getStartDate() && $hourEntry->getEndDate()) {
-                        if ($hourEntry->getStartDate() >= $hourEntry->getEndDate()) {
-                            $context->buildViolation('L\'heure de fin doit être après le début.')
-                                ->atPath('endDate')->addViolation();
-                        }
-                    }
+    // 2. Cohérence des heures (Sécurité supplémentaire sur le null)
+    if ($hourEntry->getStartDate() && $hourEntry->getEndDate()) {
+        if ($hourEntry->getStartDate() >= $hourEntry->getEndDate()) {
+            $context->buildViolation('L\'heure de fin doit être après le début.')
+                ->atPath('endDate')->addViolation();
+        }
+    }
 
-                    // 3. Validation Planning dynamique
-                    $form = $context->getRoot();
-                    $dateObj = $form->get('entryDate')->getData();
-                    
-                    if (!$dateObj || !$hourEntry->getUser()) return;
+    // 3. Validation Planning dynamique
+    $form = $context->getRoot();
+    
+    // Vérification que nous sommes bien dans le bon contexte de formulaire
+    if (!$form->has('entryDate')) return; 
 
-                    $dayOfWeek = (int)$dateObj->format('N');
-                    // On cherche les horaires du développeur sélectionné dans le form
-                    $schedules = $scheduleRepo->findBy([
-                        'dayOfWeek' => $dayOfWeek,
-                    ]);
+    $dateObj = $form->get('entryDate')->getData();
+    
+    // Si la date n'est pas remplie ou l'user manquant, on s'arrête (le validateur NotNull s'en chargera)
+    if (!$dateObj || !$hourEntry->getUser()) return;
 
-                    if (empty($schedules)) {
-                        $context->buildViolation("Aucun créneau de travail n'est défini pour ce jour (ex: Samedi/Dimanche).")
-                            ->atPath('entryDate')
-                            ->addViolation();
-                        return;
-                    }
+    $dayOfWeek = (int)$dateObj->format('N');
+    
+    // Note : Ici tu récupères tous les schedules du jour. 
+    // Si tes schedules sont liés à l'utilisateur, il faudrait ajouter le filtre 'user' => $hourEntry->getUser()
+    $schedules = $scheduleRepo->findBy([
+        'dayOfWeek' => $dayOfWeek,
+    ]);
 
-                    $userStart = $hourEntry->getStartDate()->format('H:i');
-                    $userEnd = $hourEntry->getEndDate()->format('H:i');
-                    $isValid = false;
+    if (empty($schedules)) {
+        $context->buildViolation("Aucun créneau de travail n'est défini pour ce jour.")
+            ->atPath('entryDate')
+            ->addViolation();
+        return;
+    }
 
-                    foreach ($schedules as $s) {
-                        if ($userStart >= $s->getStartTime()->format('H:i') && $userEnd <= $s->getEndTime()->format('H:i')) {
-                            $isValid = true;
-                            break;
-                        }
-                    }
+    $userStart = $hourEntry->getStartDate() ? $hourEntry->getStartDate()->format('H:i') : null;
+    $userEnd = $hourEntry->getEndDate() ? $hourEntry->getEndDate()->format('H:i') : null;
 
-                    if (!$isValid) {
-                        $context->buildViolation("Hors créneaux de travail du développeur pour ce jour.")
-                            ->atPath('endDate')->addViolation();
-                    }
-                }),
+    if ($userStart && $userEnd) {
+        $isValid = false;
+        foreach ($schedules as $s) {
+            $sStart = $s->getStartTime()->format('H:i');
+            $sEnd = $s->getEndTime()->format('H:i');
+
+            if ($userStart >= $sStart && $userEnd <= $sEnd) {
+                $isValid = true;
+                break;
+            }
+        }
+
+        if (!$isValid) {
+            $context->buildViolation("Les horaires saisis ne correspondent pas aux créneaux de travail définis.")
+                ->atPath('endDate')
+                ->addViolation();
+        }
+    }
+}),
             ],
         ]);
     }
