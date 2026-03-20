@@ -1,0 +1,16 @@
+<div class="inline-block w-full max-w-sm {{ class|default('') }}">
+    <div class="mb-1 text-[15px] font-normal text-gray-500">
+        {{ label|default('Date') }}
+    </div>
+
+    <div class="relative">
+        <input 
+            type="date" 
+            name="{{ name|default('') }}"
+            id="{{ id|default('') }}"
+            class="block w-full px-3 py-3 border border-black rounded-xl bg-white text-gray-500 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            value="{{ value|date('Y-m-d') }}" 
+            {% if required|default(false) %}required{% endif %}
+        />
+    </div>
+</div>

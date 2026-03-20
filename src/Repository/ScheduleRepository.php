@@ -16,6 +16,22 @@ class ScheduleRepository extends ServiceEntityRepository
         parent::__construct($registry, Schedule::class);
     }
 
+    public function findActiveSchedulesByDay(int $dayOfWeek, \DateTimeInterface $date): array
+    {
+        $dayStart = (clone $date)->setTime(0, 0, 0);
+        $dayEnd = (clone $date)->setTime(23, 59, 59);
+
+        return $this->createQueryBuilder('s')
+            ->where('s.dayOfWeek = :day')
+            ->andWhere('s.createdAt <= :dayEnd')
+            ->andWhere('(s.deleted_at IS NULL OR s.deleted_at > :dayStart)') 
+            ->setParameter('day', $dayOfWeek)
+            ->setParameter('dayEnd', $dayEnd)
+            ->setParameter('dayStart', $dayStart)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Schedule[] Returns an array of Schedule objects
 //     */
