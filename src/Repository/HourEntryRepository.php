@@ -61,6 +61,45 @@ class HourEntryRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;
     }
 
+    /**
+     * Récupère les saisies pour le manager avec les filtres appliqués,
+     * supporte maintenant le filtrage multiple.
+     */
+    public function getManagerFilteredQuery(
+        \DateTimeInterface $startDate, 
+        \DateTimeInterface $endDate, 
+        mixed $userId = null,
+        mixed $projectId = null
+    ): \Doctrine\ORM\Query {
+        
+        $qb = $this->createQueryBuilder('h')
+            ->innerJoin('h.user', 'u')
+            ->leftJoin('h.project', 'p')
+            ->leftJoin('h.activity', 'a')
+            ->addSelect('u', 'p', 'a')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('start', $startDate->format('Y-m-d 00:00:00'))
+            ->setParameter('end', $endDate->format('Y-m-d 23:59:59'))
+            ->orderBy('h.startDate', 'DESC');
+
+        // Gestion du filtre Utilisateur (Simple ou Multiple)
+        if ($userId) {
+            $operator = is_array($userId) ? 'IN' : '=';
+            $qb->andWhere("u.id $operator (:userId)")
+               ->setParameter('userId', $userId);
+        }
+
+        // Gestion du filtre Projet (Simple ou Multiple)
+        if ($projectId) {
+            $operator = is_array($projectId) ? 'IN' : '=';
+            $qb->andWhere("p.id $operator (:projectId)")
+               ->setParameter('projectId', $projectId);
+        }
+
+        return $qb->getQuery();
+    }
+
     //    /**
     //     * @return HourEntry[] Returns an array of HourEntry objects
     //     */

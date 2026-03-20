@@ -1,0 +1,282 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ editMode ? 'Modifier' : 'Ajouter' }} une saisie (Manager){% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-2xl mx-auto">
+
+    {# --- BLOC D'AFFICHAGE DES ERREURS FLASH --- #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label == 'error' ? 'error' : 'success' }} mb-6 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ label == 'error' ? 'M6 18L18 6M6 6l12 12' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }}" /></svg>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="card bg-base-100 shadow-xl border border-base-200">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-6">
+                {{ editMode ? 'Modifier la saisie (Manager)' : 'Nouvelle saisie (Manager)' }}
+            </h2>
+
+            <script>
+                const activityConfig = {
+                    {% for choice in form.activity.vars.choices %}
+                        "{{ choice.value }}": {{ choice.data.isNeedProject ? 'true' : 'false' }},
+                    {% endfor %}
+                };
+            </script>
+
+            {{ form_start(form) }}
+                
+                {# --- NOUVEAU : SECTION DÉVELOPPEUR --- #}
+                <div class="mb-6">
+                    {% set selected_user = null %}
+                    {% if form.user.vars.data %}
+                        {% set selected_user = { id: form.user.vars.data.id, label: form.user.vars.data.lastname|upper ~ ' ' ~ form.user.vars.data.firstname } %}
+                    {% endif %}
+
+                    {{ include('composants/select_multi.html.twig', {
+                        'label': 'Attribuer au développeur',
+                        'name': form.user.vars.full_name,
+                        'placeholder': 'Choisir un développeur...',
+                        'multiple': false,
+                        'items': form.user.vars.choices|map(c => {id: c.value, label: c.label}),
+                        'initial_value': selected_user ? selected_user|json_encode : 'null',
+                        'error': form.user.vars.errors
+                    }) }}
+                    {% do form.user.setRendered %}
+                </div>
+
+                {# --- SECTION DATE --- #}
+                <div class="mb-8">
+                    {{ include('composants/filter_date_picker.html.twig', {
+                        'label': 'Date',
+                        'name': form.entryDate.vars.full_name,
+                        'id': form.entryDate.vars.id,
+                        'value': form.entryDate.vars.data ? form.entryDate.vars.data|date('Y-m-d') : "now"|date('Y-m-d'),
+                        'error': form.entryDate.vars.errors
+                    }) }}
+                    {% do form.entryDate.setRendered %}
+
+                    {# AJOUT DE L'ID ICI POUR LE JAVASCRIPT #}
+                    <div id="schedule-container">
+                        {% if currentSchedules is not empty %}
+                            <div class="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-lg flex flex-wrap gap-2 items-center">
+                                <span class="text-blue-700 text-xs font-bold uppercase">Horaires prévus :</span>
+                                {% for s in currentSchedules %}
+                                    <span class="badge badge-info badge-outline gap-1">
+                                        {{ s.startTime|date('H:i') }} à {{ s.endTime|date('H:i') }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="mt-2 p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+                                <span class="text-yellow-700 text-xs italic">Aucun horaire de travail défini pour ce jour.</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="mb-8 opacity-20">
+
+                {# --- SECTION HORAIRES --- #}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div class="form-control w-full">
+                        {{ include('composants/time_picker.html.twig', {
+                            'label': 'Heure de début',
+                            'name': form.startDate.vars.full_name,
+                            'id': form.startDate.vars.id,
+                            'value': form.startDate.vars.data ? form.startDate.vars.data|date('H:i') : '',
+                            'error': form.startDate.vars.errors,
+                            'required': true
+                        }) }}
+                        {% do form.startDate.setRendered %}
+                    </div>
+
+                    <div class="form-control w-full">
+                        {{ include('composants/time_picker.html.twig', {
+                            'label': 'Heure de fin',
+                            'name': form.endDate.vars.full_name,
+                            'id': form.endDate.vars.id,
+                            'value': form.endDate.vars.data ? form.endDate.vars.data|date('H:i') : '',
+                            'error': form.endDate.vars.errors,
+                            'required': true
+                        }) }}
+                        {% do form.endDate.setRendered %}
+                    </div>
+                </div>
+
+                {# --- SECTION ACTIVITÉ --- #}
+                <div class="mb-8" id="activity-wrapper">
+                    {% set selected_activity = null %}
+                    {% if form.activity.vars.value is not empty %}
+                        {% for choice in form.activity.vars.choices %}
+                            {% if choice.value == form.activity.vars.value %}
+                                {% set selected_activity = { id: choice.value, label: choice.label } %}
+                            {% endif %}
+                        {% endfor %}
+                    {% elseif form.activity.vars.data %}
+                        {% set selected_activity = { id: form.activity.vars.data.id, label: form.activity.vars.data.label } %}
+                    {% endif %}
+
+                    {{ include('composants/select_multi.html.twig', {
+                        'label': 'Activité',
+                        'name': form.activity.vars.full_name,
+                        'placeholder': 'Choisir une activité...',
+                        'multiple': false,
+                        'items': form.activity.vars.choices|map(c => {id: c.value, label: c.label}),
+                        'initial_value': selected_activity ? selected_activity|json_encode : 'null',
+                        'error': form.activity.vars.errors
+                    }) }}
+                    {% do form.activity.setRendered %}
+                </div>
+
+                {# --- SECTION PROJET --- #}
+                <div class="mb-8" id="project-container" style="display: none;">
+                    {% set selected_project = null %}
+                    {% if form.project.vars.value is not empty %}
+                        {% for choice in form.project.vars.choices %}
+                            {% if choice.value == form.project.vars.value %}
+                                {% set selected_project = { id: choice.value, label: choice.label } %}
+                            {% endif %}
+                        {% endfor %}
+                    {% elseif form.project.vars.data %}
+                        {% set selected_project = { id: form.project.vars.data.id, label: form.project.vars.data.name } %}
+                    {% endif %}
+
+                    {{ include('composants/select_multi.html.twig', {
+                        'label': 'Projet',
+                        'name': form.project.vars.full_name,
+                        'placeholder': 'Choisir un projet...',
+                        'multiple': false,
+                        'items': form.project.vars.choices|map(c => {id: c.value, label: c.label}),
+                        'initial_value': selected_project ? selected_project|json_encode : 'null',
+                        'error': form.project.vars.errors
+                    }) }}
+                    {% do form.project.setRendered %}
+                </div>
+
+                <div class="mb-8">
+                    {{ include('composants/textarea.html.twig', {
+                        'label': 'Commentaire',
+                        'name': form.commentary.vars.full_name,
+                        'id': form.commentary.vars.id,
+                        'value': form.commentary.vars.value,
+                        'placeholder': 'Détails de l\'intervention...',
+                        'rows': 3,
+                        'error': form.commentary.vars.errors
+                    }) }}
+                    {% do form.commentary.setRendered %}
+                </div>
+
+                <div class="card-actions justify-end mt-8 gap-2">
+                    {{ include('composants/button.html.twig', {
+                        'label': 'Annuler',
+                        'type': 'annuler',
+                        'href': path('manager_hour_entry_list')
+                    }) }}
+                    
+                    {{ include('composants/button.html.twig', {
+                        'label': editMode ? 'Enregistrer' : 'Confirmer',
+                        'type': 'confirmer'
+                    }) }}
+                </div>
+            {{ form_end(form) }}
+
+            {% if editMode %}
+                    <div class="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 flex justify-between items-center">
+                        <p class="text-red-700 font-medium">Supprimer cet heure</p>
+                        <form method="post" action="{{ path('manager_hour_entry_delete', {'id': hourEntry.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement cette saisie ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ hourEntry.id) }}">
+                            
+                            {{ include('composants/button.html.twig', { 
+                                'type': 'effacer', 
+                                'label': 'Supprimer la saisie' 
+                            }) }}
+                        </form>
+                    </div>
+                {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Le script JS reste identique au tien pour la gestion Activité/Projet #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectContainer = document.getElementById('project-container');
+    const activityWrapper = document.querySelector('#activity-wrapper [x-data]');
+    const projectWrapper = document.querySelector('#project-container [x-data]');
+    // --- MISE À JOUR DYNAMIQUE DU PLANNING ---
+    const dateInput = document.getElementById('{{ form.entryDate.vars.id }}');
+    const scheduleContainer = document.getElementById('schedule-container');
+
+    function refreshScheduleInfo(dateValue) {
+        if (!dateValue) return;
+
+        fetch(`/manager-hour-entry/get-schedule/${dateValue}`)
+            .then(response => response.json())
+            .then(data => {
+                scheduleContainer.innerHTML = '';
+
+                if (data.length > 0) {
+                    let html = `<div class="p-3 bg-blue-50 border border-blue-100 rounded-lg flex flex-wrap gap-2 items-center">
+                                    <span class="text-blue-700 text-xs font-bold uppercase">Horaires prévus :</span>`;
+                    data.forEach(slot => {
+                        html += `<span class="badge badge-info badge-outline gap-1">${slot.start} à ${slot.end}</span>`;
+                    });
+                    html += `</div>`;
+                    scheduleContainer.innerHTML = html;
+                } else {
+                    scheduleContainer.innerHTML = `<div class="p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+                                                    <span class="text-yellow-700 text-xs italic">Aucun horaire de travail défini pour ce jour.</span>
+                                                </div>`;
+                }
+            });
+    }
+
+    // On écoute le changement de date
+    if (dateInput) {
+        dateInput.addEventListener('change', (e) => refreshScheduleInfo(e.target.value));
+    }
+
+    function updateProjectVisibility(selectedId) {
+        if (!selectedId) {
+            projectContainer.style.display = 'none';
+            resetProject();
+            return;
+        }
+        const needProject = activityConfig[selectedId] === true;
+        projectContainer.style.display = needProject ? 'block' : 'none';
+        if (!needProject) resetProject();
+    }
+
+    function resetProject() {
+        if (projectWrapper && typeof Alpine !== 'undefined') {
+            const projectData = Alpine.$data(projectWrapper);
+            projectData.selected = null;
+        }
+    }
+
+    function initAlpineObserver() {
+        if (!activityWrapper) return;
+        Alpine.effect(() => {
+            const data = Alpine.$data(activityWrapper);
+            if (data && data.selected) {
+                updateProjectVisibility(data.selected.id);
+            } else {
+                updateProjectVisibility(null);
+            }
+        });
+    }
+
+    if (typeof Alpine !== 'undefined') {
+        initAlpineObserver();
+    } else {
+        document.addEventListener('alpine:init', initAlpineObserver);
+    }
+});
+</script>
+{% endblock %}
