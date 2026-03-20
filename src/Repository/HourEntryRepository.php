@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\HourEntry;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -98,6 +99,27 @@ class HourEntryRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery();
+    }
+
+    /**
+     * Récupère les saisies d'un utilisateur pour un jour précis
+     */
+    public function findByUserAndDate(User $user, \DateTimeInterface $date): array
+    {
+        // On définit le début et la fin de la journée cible
+        $startOfDay = (clone $date)->setTime(0, 0, 0);
+        $endOfDay = (clone $date)->setTime(23, 59, 59);
+
+        return $this->createQueryBuilder('h')
+            ->andWhere('h.user = :user')
+            // On cherche toutes les saisies dont le début est compris dans cette journée
+            ->andWhere('h.startDate BETWEEN :start AND :end') 
+            ->setParameter('user', $user)
+            ->setParameter('start', $startOfDay)
+            ->setParameter('end', $endOfDay)
+            ->orderBy('h.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     //    /**

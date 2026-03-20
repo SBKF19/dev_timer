@@ -238,4 +238,22 @@ class ManagerHourEntryController extends AbstractController
 
         return new JsonResponse($data);
     }
+
+    #[Route('/get-occupancy/{userId}/{date}', name: 'get_occupancy_api', methods: ['GET'])]
+    public function getOccupancyApi(int $userId, string $date, HourEntryRepository $hourRepo, UserRepository $userRepo): JsonResponse
+    {
+        $user = $userRepo->find($userId);
+        $dateTime = new \DateTime($date);
+        
+        // On récupère les saisies existantes pour ce dev à cette date
+        $entries = $hourRepo->findByUserAndDate($user, $dateTime);
+        
+        $data = array_map(fn($e) => [
+            'start' => $e->getStartDate()->format('H:i'),
+            'end' => $e->getEndDate()->format('H:i'),
+            'activity' => $e->getActivity() ? $e->getActivity()->getLabel() : 'N/A'
+        ], $entries);
+
+        return new JsonResponse($data);
+    }
 }
