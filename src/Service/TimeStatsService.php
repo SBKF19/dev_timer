@@ -72,4 +72,51 @@ class TimeStatsService
     {
         return sprintf('%dh%02d', floor($minutes / 60), $minutes % 60);
     }
+
+    public function getManagerStats(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, $projectId = null): array
+    {
+        $totalTheoreticalMinutes = 0;
+        $totalSaisieMinutes = 0;
+
+        foreach ($users as $user) {
+            $period = new \DatePeriod($startDate, new \DateInterval('P1D'), (clone $endDate)->modify('+1 day'));
+            foreach ($period as $date) {
+                if ($this->holidayRepository->findOneBy(['date' => $date])) continue;
+                
+                $dayOfWeek = (int)$date->format('N');
+                $schedules = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $date);
+
+                foreach ($schedules as $s) {
+                    $diff = $s->getStartTime()->diff($s->getEndTime());
+                    $totalTheoreticalMinutes += ($diff->h * 60) + $diff->i;
+                }
+            }
+        }
+
+        $qb = $this->hourEntryRepository->createQueryBuilder('h')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
+
+        if ($projectId) {
+            $qb->andWhere('h.project IN (:project)')->setParameter('project', $projectId);
+        }
+
+        $entries = $qb->getQuery()->getResult();
+
+        foreach ($entries as $entry) {
+            $diff = $entry->getStartDate()->diff($entry->getEndDate());
+            $totalSaisieMinutes += ($diff->h * 60) + $diff->i;
+        }
+
+        $restantMinutes = max(0, $totalTheoreticalMinutes - $totalSaisieMinutes);
+
+        return [
+            'saisie' => $this->formatMinutes($totalSaisieMinutes),
+            'restant' => $this->formatMinutes($restantMinutes),
+        ];
+    }
 }

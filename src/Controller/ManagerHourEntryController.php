@@ -14,6 +14,7 @@ use App\Entity\HourEntry;
 use App\Form\ManagerHourEntryType;
 use App\Repository\ScheduleRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Service\TimeStatsService;
 
 #[Route('/manager-hour-entry', name: 'manager_hour_entry_')]
 class ManagerHourEntryController extends AbstractController
@@ -24,10 +25,18 @@ class ManagerHourEntryController extends AbstractController
         HourEntryRepository $hourEntryRepository,
         UserRepository $userRepository,
         ProjectRepository $projectRepository,
-        PaginatorInterface $paginator
+        PaginatorInterface $paginator,
+        TimeStatsService $timeStatsService
     ): Response {
         $today = new \DateTime();
         $period = $request->query->get('period');
+
+        $params = $request->query->all();
+        $userId = $params['user_id'] ?? null;
+        $projectId = $params['project_id'] ?? null;
+
+        if ($userId === "") $userId = null;
+        if ($projectId === "") $projectId = null;
 
         // --- 1. GESTION DES DATES ---
         if ($period === 'week') {
@@ -47,13 +56,17 @@ class ManagerHourEntryController extends AbstractController
             $endDate = $endDateStr ? new \DateTime($endDateStr) : (clone $today)->modify('Sunday this week');
         }
 
-        // --- 2. GESTION DES FILTRES (MULTIPLE) ---
-        $params = $request->query->all();
-        $userId = $params['user_id'] ?? null;
-        $projectId = $params['project_id'] ?? null;
+        $usersForStats = $userId ? $userRepository->findBy(['id' => $userId]) : $userRepository->findBy(['status' => true]);
 
-        if ($userId === "") $userId = null;
-        if ($projectId === "") $projectId = null;
+        $statsBandeau = $timeStatsService->getManagerStats(
+            $usersForStats, 
+            $startDate, 
+            $endDate, 
+            $projectId
+        );
+
+        // --- 2. GESTION DES FILTRES (MULTIPLE) ---
+
 
         // --- 3. RÉCUPÉRATION DES DONNÉES ---
         $query = $hourEntryRepository->getManagerFilteredQuery($startDate, $endDate, $userId, $projectId);
@@ -73,6 +86,7 @@ class ManagerHourEntryController extends AbstractController
             'current_end_date' => $endDate->format('Y-m-d'),
             'current_user_id' => $userId,
             'current_project_id' => $projectId,
+            'statsBandeau' => $statsBandeau,
         ]);
     }
 
