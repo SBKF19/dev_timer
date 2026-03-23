@@ -1,4 +1,4 @@
-//import './stimulus_bootstrap.js';
+import './stimulus_bootstrap.js';
 
 /*
  * Welcome to your app's main JavaScript file!
@@ -11,3 +11,4 @@
 import './styles/app.css';
 import './styles/calendar.css';
 import './js/calendar-init.js';
+import './js/table-scroll.js';

@@ -15,6 +15,8 @@ use App\Form\ManagerHourEntryType;
 use App\Repository\ScheduleRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Service\TimeStatsService;
+use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
+use Symfony\UX\Chartjs\Model\Chart;
 
 #[Route('/manager-hour-entry', name: 'manager_hour_entry_')]
 class ManagerHourEntryController extends AbstractController
@@ -26,7 +28,8 @@ class ManagerHourEntryController extends AbstractController
         UserRepository $userRepository,
         ProjectRepository $projectRepository,
         PaginatorInterface $paginator,
-        TimeStatsService $timeStatsService
+        TimeStatsService $timeStatsService,
+        ChartBuilderInterface $chartBuilder
     ): Response {
         $today = new \DateTime();
         $period = $request->query->get('period');
@@ -65,17 +68,43 @@ class ManagerHourEntryController extends AbstractController
             $projectId
         );
 
-        // --- 2. GESTION DES FILTRES (MULTIPLE) ---
-
 
         // --- 3. RÉCUPÉRATION DES DONNÉES ---
-        $query = $hourEntryRepository->getManagerFilteredQuery($startDate, $endDate, $userId, $projectId);
+        $query = $hourEntryRepository->getQueryForManagerList($startDate, $endDate, $userId, $projectId);
 
         $pagination = $paginator->paginate(
             $query,
             $request->query->getInt('page', 1),
-            10
+            10,
+            [
+                'defaultSortFieldName' => 'h.startDate',
+                'defaultSortDirection' => 'desc',
+            ]
         );
+
+        $chartData = $timeStatsService->getChartData($usersForStats, $startDate, $endDate, $projectId);
+
+        $stackedChart = $chartBuilder->createChart(Chart::TYPE_BAR);
+        $stackedChart->setData([
+            'labels' => $chartData['labels'],
+            'datasets' => $chartData['datasets'],
+        ]);
+
+       $stackedChart->setOptions([
+            'maintainAspectRatio' => false,
+            'plugins' => [
+                'legend' => ['position' => 'bottom'],
+                'tooltip' => [
+                    'enabled' => true,
+                    'mode' => 'index',
+                    'intersect' => false,
+                ]
+            ],
+            'scales' => [
+                'x' => ['stacked' => true],
+                'y' => ['stacked' => true, 'beginAtZero' => true]
+            ],
+        ]);
 
         return $this->render('manager_hour_entry/index.html.twig', [
             'pagination' => $pagination,
@@ -87,6 +116,7 @@ class ManagerHourEntryController extends AbstractController
             'current_user_id' => $userId,
             'current_project_id' => $projectId,
             'statsBandeau' => $statsBandeau,
+            'stackedChart' => $stackedChart,
         ]);
     }
 
