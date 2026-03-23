@@ -98,4 +98,11 @@
 			</ul>
 		</div>
 	</div>
+	{% if error is defined and error|length > 0 %}
+        <div class="text-red-500 text-sm mt-2 font-medium">
+            {% for err in error %}
+                <div>{{ err.message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>

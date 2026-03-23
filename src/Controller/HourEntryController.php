@@ -200,7 +200,7 @@ final class HourEntryController extends AbstractController
         HourEntry $hourEntry, 
         Request $request, 
         HourEntryRepository $hourEntryRepository,
-        ScheduleRepository $scheduleRepository // N'oublie pas l'injection ici
+        ScheduleRepository $scheduleRepository
     ): Response {
         $dateBase = clone $hourEntry->getStartDate();
         $dayOfWeek = (int)$dateBase->format('N');
