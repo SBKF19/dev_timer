@@ -104,3 +104,4 @@ class ProjectController extends AbstractController
         ]);
     }
 }
+// textarea commentaire, couleur et heure total projet dans le tableau, 
