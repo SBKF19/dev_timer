@@ -1,0 +1,40 @@
+{# 1. Sécurisation des variables optionnelles #}
+{% set is_outline = outline|default(false) %}
+{% set btn_size = size|default(null) %}
+{% set btn_type = type|default('confirmer')|lower %}
+{% set href = href|default(null) %}
+{% set attr = attr|default({}) %}
+
+{# 2. Construction de la classe de base #}
+{% set base_class = 'btn ' ~ (is_outline ? 'btn-outline ' : '') ~ (btn_size ? 'btn-' ~ btn_size : '') %}
+
+{# 3. Mapping des couleurs #}
+{% set variants = {
+    'effacer': 'btn-error text-white',
+    'confirmer': 'btn-primary text-white',
+    'annuler': 'bg-gray-500 hover:bg-gray-600 border-none text-white',
+    'filtrer': 'btn-warning text-white'
+} %}
+
+{% set button_variant = variants[btn_type] ?? 'btn-neutral' %}
+{% set final_class = base_class ~ ' ' ~ button_variant ~ ' ' ~ class|default('') %}
+
+{% if href %}
+    <a href="{{ href }}" class="{{ final_class }}" 
+        {% for name, value in attr %}
+            {{ name }}="{{ value }}"
+        {% endfor %}>
+        {{ label|default('Lien') }}
+    </a>
+{% else %}
+    {# On récupère le type (button ou submit) depuis attr, sinon 'submit' par défaut #}
+    <button type="{{ attr.type|default('submit') }}" class="{{ final_class }}"
+        {% for name, value in attr %}
+            {# On boucle sur les attributs mais on ignore 'type' car on l'a déjà écrit au-dessus #}
+            {% if name != 'type' %}
+                {{ name }}="{{ value }}"
+            {% endif %}
+        {% endfor %}>
+        {{ label|default('Bouton') }}
+    </button>
+{% endif %}

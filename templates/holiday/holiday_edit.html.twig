@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier un jour férié{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-white border border-[#E3E3E3] rounded-xl shadow-sm p-12">
+
+        <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Gestion des jours fériés</h1>
+        <h2 class="text-[#000000] text-lg font-semibold mb-10">Modification du jour férié</h2>
+
+        {{ form_start(HolidayFormType, { attr: { id: 'holiday_form_edit'} }) }}
+            {{ include("form/form_holiday.html.twig") }}
+        {{ form_end(HolidayFormType) }}
+
+        <div class="flex flex-row justify-between items-center mt-12 gap-6">
+
+            <a href="{{ path('app_holiday') }}"
+               class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium flex items-center justify-center">
+                Retour
+            </a>
+
+            <form method="post" action="{{ path('app_holiday_delete', {'id': holiday.id}) }}" onsubmit="return confirm('Supprimer ce jour férié ?');" class="flex-1">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_holiday') }}">
+                <button type="submit" class="btn border-none bg-[#FF0000] hover:bg-[#CC0000] text-white w-full h-12 rounded-xl normal-case font-medium">
+                    Supprimer
+                </button>
+            </form>
+
+            <button type="submit" form="holiday_form_edit"
+                    class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case font-medium">
+                Modifier
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

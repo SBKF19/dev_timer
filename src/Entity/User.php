@@ -11,12 +11,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -35,7 +37,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    private ?\DateTimeInterface $hired_date = null;
+    private ?DateTimeInterface $hired_date = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photo = null;
@@ -44,64 +46,69 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?bool $status = true;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $contract_end_date = null;
+    #[Assert\GreaterThan(
+        propertyPath: 'hired_date',
+        message: 'La date d’embauche doit être antérieure à la date de fin de contrat.'
+    )]
+    private ?DateTimeInterface $contract_end_date = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $create_at = null;
+    private ?DateTimeInterface $create_at = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $last_login = null;
+    private ?DateTimeInterface $last_login = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $color = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $deleted_at = null;
+    private ?DateTimeInterface $deleted_at = null;
 
     #[ORM\ManyToOne(inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Role $role = null;
 
     /**
-     * @var Collection<int, Project>
+     * Projects auxquels appartient l'utilisateur
      */
-    #[ORM\ManyToMany(targetEntity: Project::class, inversedBy: 'usersInProject')]
+    #[ORM\ManyToMany(targetEntity: Project::class, mappedBy: 'usersInProject')]
     private Collection $projects;
 
     /**
-     * @var Collection<int, HourEntry>
+     * Heures saisies par l'utilisateur
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'selected')]
-    private Collection $selected;
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: HourEntry::class)]
+    private Collection $hourEntries;
 
     /**
-     * @var Collection<int, HourEntry>
+     * Heures créées par cet utilisateur (audit)
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'created')]
-    private Collection $created;
+    #[ORM\OneToMany(mappedBy: 'createdBy', targetEntity: HourEntry::class)]
+    private Collection $createdHourEntries;
+
     /**
-     *  @var Collection<int, Project>
+     * Projets que l'utilisateur manage
      */
-    #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'manager')]
+    #[ORM\OneToMany(mappedBy: 'manager', targetEntity: Project::class)]
     private Collection $managedProjects;
+
 
     public function __construct()
     {
         $this->projects = new ArrayCollection();
-        $this->selected = new ArrayCollection();
-        $this->created = new ArrayCollection();
+        $this->hourEntries = new ArrayCollection();
+        $this->createdHourEntries = new ArrayCollection();
         $this->managedProjects = new ArrayCollection();
-        $this->projects = new ArrayCollection();
-        $this->managedProjects = new ArrayCollection();
-        $this->projects = new ArrayCollection();
-        $this->managedProjects = new ArrayCollection();
-        // On initialise souvent la date de création par défaut
+
         $this->create_at = new \DateTime();
     }
 
-    // --- GESTION DES COLLECTIONS ---
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONS
+    |--------------------------------------------------------------------------
+    */
 
-    /** @return Collection<int, Project> */
     public function getProjects(): Collection
     {
         return $this->projects;
@@ -111,32 +118,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->projects->contains($project)) {
             $this->projects->add($project);
+            $project->addUserInProject($this);
         }
+
         return $this;
     }
 
     public function removeProject(Project $project): static
     {
-        $this->projects->removeElement($project);
+        if ($this->projects->removeElement($project)) {
+            $project->removeUserInProject($this);
+        }
+
         return $this;
     }
 
-    /** @return Collection<int, Project> */
+    public function getHourEntries(): Collection
+    {
+        return $this->hourEntries;
+    }
+
+    public function getCreatedHourEntries(): Collection
+    {
+        return $this->createdHourEntries;
+    }
+
     public function getManagedProjects(): Collection
     {
         return $this->managedProjects;
     }
 
-    public function addManagedProject(Project $managedProject): static
+    public function addManagedProject(Project $project): static
     {
-        if (!$this->managedProjects->contains($managedProject)) {
-            $this->managedProjects->add($managedProject);
-            $managedProject->setManager($this);
+        if (!$this->managedProjects->contains($project)) {
+            $this->managedProjects->add($project);
+            $project->setManager($this);
         }
+
         return $this;
     }
 
-    // --- GETTERS & SETTERS STANDARDS ---
+    /*
+    |--------------------------------------------------------------------------
+    | GETTERS / SETTERS
+    |--------------------------------------------------------------------------
+    */
 
     public function getId(): ?int
     {
@@ -147,6 +173,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->email;
     }
+
     public function setEmail(string $email): static
     {
         $this->email = $email;
@@ -157,6 +184,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->firstname;
     }
+
     public function setFirstname(string $firstname): static
     {
         $this->firstname = $firstname;
@@ -167,6 +195,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->lastname;
     }
+
     public function setLastname(string $lastname): static
     {
         $this->lastname = $lastname;
@@ -177,19 +206,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->password;
     }
+
     public function setPassword(string $password): static
     {
         $this->password = $password;
         return $this;
     }
 
-    public function getHiredDate(): ?\DateTimeInterface
+    public function getHiredDate(): ?DateTimeInterface
     {
         return $this->hired_date;
     }
-    public function setHiredDate(\DateTimeInterface $hired_date): static
+
+    public function setHiredDate(DateTimeInterface $hired_date): static
     {
         $this->hired_date = $hired_date;
+        return $this;
+    }
+
+    public function getContractEndDate(): ?DateTimeInterface
+    {
+        return $this->contract_end_date;
+    }
+
+    public function setContractEndDate(?DateTimeInterface $contract_end_date): static
+    {
+        $this->contract_end_date = $contract_end_date;
+        return $this;
+    }
+
+    public function getCreateAt(): ?DateTimeInterface
+    {
+        return $this->create_at;
+    }
+
+    public function setCreateAt(DateTimeInterface $create_at): static
+    {
+        $this->create_at = $create_at;
+        return $this;
+    }
+
+    public function getLastLogin(): ?DateTimeInterface
+    {
+        return $this->last_login;
+    }
+
+    public function setLastLogin(?DateTimeInterface $last_login): static
+    {
+        $this->last_login = $last_login;
         return $this;
     }
 
@@ -197,6 +261,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->photo;
     }
+
     public function setPhoto(?string $photo): static
     {
         $this->photo = $photo;
@@ -207,47 +272,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->status;
     }
+
     public function setStatus(bool $status): static
     {
         $this->status = $status;
-        return $this;
-    }
-
-    public function getRole(): ?Role
-    {
-        return $this->role;
-    }
-    public function setRole(?Role $role): static
-    {
-        $this->role = $role;
-        return $this;
-    }
-
-    public function setContractEndDate(?\DateTimeInterface $contract_end_date): static
-    {
-        $this->contract_end_date = $contract_end_date;
-        return $this;
-    }
-
-    public function getCreateAt(): ?\DateTimeInterface
-    {
-        return $this->create_at;
-    }
-
-    public function setCreateAt(\DateTimeInterface $create_at): static
-    {
-        $this->create_at = $create_at;
-        return $this;
-    }
-
-    public function getLastLogin(): ?\DateTimeInterface
-    {
-        return $this->last_login;
-    }
-
-    public function setLastLogin(?\DateTimeInterface $last_login): static
-    {
-        $this->last_login = $last_login;
         return $this;
     }
 
@@ -262,21 +290,44 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getDeletedAt(): ?\DateTimeInterface
+    public function getDeletedAt(): ?DateTimeInterface
     {
         return $this->deleted_at;
     }
 
-    public function setDeletedAt(?\DateTimeInterface $deleted_at): static
+    public function setDeletedAt(?DateTimeInterface $deleted_at): static
     {
         $this->deleted_at = $deleted_at;
         return $this;
     }
 
+    public function getRole(): ?Role
+    {
+        return $this->role;
+    }
+
+    public function setRole(?Role $role): static
+    {
+        $this->role = $role;
+        return $this;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SECURITY
+    |--------------------------------------------------------------------------
+    */
 
     public function getRoles(): array
     {
-        return ['ROLE_USER'];
+        $roles = ['ROLE_USER'];
+
+        if ($this->role && $this->role->getLabel()) {
+            $label = strtoupper($this->role->getLabel());
+            $roles[] = 'ROLE_' . str_replace(' ', '_', $label);
+        }
+
+        return array_unique($roles);
     }
 
     public function getUserIdentifier(): string

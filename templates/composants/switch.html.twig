@@ -1,0 +1,14 @@
+<div class="flex items-center gap-3 {{ class|default('') }}">
+	<label
+		class="relative inline-flex items-center cursor-pointer">
+		{# Input checkbox caché mais fonctionnel #}
+		<input type="checkbox" name="{{ name|default('switch') }}" class="toggle toggle-lg checked:bg-[#1d3557] border-[#1d3557] [--tglbg:white] hover:bg-[#1d3557]/90" {% if checked|default(false) %} checked {% endif %} {% if attr is defined %} {% for key, val in attr %} {{ key }}="{{ val }}" {% endfor %} {% endif %}/>
+	</label>
+
+	{# Texte d'accompagnement #}
+	{% if label is defined %}
+		<span class="text-[17px] font-medium text-[#1d3557]">
+			{{ label }}
+		</span>
+	{% endif %}
+</div>

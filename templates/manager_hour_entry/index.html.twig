@@ -1,0 +1,200 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Saisies horaires - Vue Manager{% endblock %}
+
+{% block body %}
+{# 1. Préparer la liste des développeurs pour le sélecteur #}
+{% set userItems = [] %}
+{% for u in users %}
+    {% set userItems = userItems|merge([{ id: u.id, label: u.lastname|upper ~ ' ' ~ u.firstname }]) %}
+{% endfor %}
+
+{# 2. Préparer la liste des projets pour le sélecteur #}
+{% set projectItems = [] %}
+{% for p in projects %}
+    {% set projectItems = projectItems|merge([{ id: p.id, label: p.name }]) %}
+{% endfor %}
+
+<div class="p-6 max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Contrôle des saisies horaires</h1>
+
+    {# FORMULAIRE DE FILTRE #}
+    <div class="card bg-light mb-4 shadow-sm">
+    <div>
+                    {{ include('composants/button.html.twig', {
+                        'label': 'Ajouter une saisie',
+                        'type': 'confirmer',
+                        'href': path('manager_hour_entry_add')
+                    }) }}
+                </div>
+        <div class="card-body">
+            <div class="flex items-center gap-2 mb-4 text-gray-700">
+                <span class="font-bold uppercase tracking-wider text-xs">Filtres de recherche</span>
+                <hr class="flex-grow border-gray-300">
+            </div>
+            <div class="flex gap-2">
+                {% for p in ['week', 'month', 'year'] %}
+                    {% set queryParams = app.request.query.all|merge({'period': p}) %}
+                    {% set queryParams = queryParams|filter((v, k) => k != 'page' and k != 'sort' and k != 'direction') %}
+
+                    <a href="{{ path('manager_hour_entry_list', queryParams) }}" 
+                    class="px-3 py-1 text-xs rounded-full border transition-all {{ current_period == p ? 'bg-slate-800 text-white' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100' }}">
+                        {{ p == 'week' ? 'Semaine' : (p == 'month' ? 'Mois' : 'Année') }}
+                    </a>
+                {% endfor %}
+            </div>
+
+            <form method="get" action="{{ path('manager_hour_entry_list') }}" class="flex flex-wrap md:flex-nowrap items-end gap-4">
+                
+                {# Sélecteur Date Début #}
+                <div class="flex-grow">
+                    {{ include('composants/filter_date_picker.html.twig', {
+                        'label': 'Date de début',
+                        'name': 'start_date',
+                        'id': 'filter_start_date',
+                        'value': current_start_date
+                    }) }}
+                </div>
+
+                {# Sélecteur Date Fin #}
+                <div class="flex-grow">
+                    {{ include('composants/filter_date_picker.html.twig', {
+                        'label': 'Date de fin',
+                        'name': 'end_date',
+                        'id': 'filter_end_date',
+                        'value': current_end_date
+                    }) }}
+                </div>
+
+                {# Sélecteur Développeur #}
+                <div class="flex-grow">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Développeur',
+                        name: 'user_id',
+                        placeholder: 'Tous les développeurs',
+                        items: userItems,
+                        value: current_user_id,
+                        multiple: true
+                    }) }}
+                </div>
+
+                {# Sélecteur Projet #}
+                <div class="flex-grow">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Projet',
+                        name: 'project_id',
+                        placeholder: 'Tous les projets',
+                        items: projectItems,
+                        value: current_project_id,
+                        multiple: true
+                    }) }}
+                </div>
+
+                {# Boutons d'action #}
+                <div class="flex gap-2 pb-[2px]">
+                    {{ include('composants/button.html.twig', {type: 'filtrer', label: 'Filtrer'}) }}
+                    {{ include('composants/button.html.twig', {
+                        type: 'annuler', 
+                        label: 'Réinitialiser',
+                        href: path('manager_hour_entry_list'),
+                    }) }}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# --- BANDEAU DE STATISTIQUES (RÉCAPITULATIF) --- #}
+    <div class="flex flex-wrap gap-6 mb-8">
+        {# Bloc Heures Saisies #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] px-12 py-6 min-w-[240px] flex flex-col items-center justify-center transition-all hover:shadow-md">
+            <p class="text-[13px] font-bold text-slate-400 uppercase tracking-[0.05em] mb-2">
+                Heures Saisies
+            </p>
+            <p class="text-4xl font-black text-blue-600">
+                {{ statsBandeau.saisie }}
+            </p>
+        </div>
+
+        {# Bloc Heures Restantes #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] px-12 py-6 min-w-[240px] flex flex-col items-center justify-center transition-all hover:shadow-md">
+            <p class="text-[13px] font-bold text-slate-400 uppercase tracking-[0.05em] mb-2">
+                Heures Restantes
+            </p>
+            <p class="text-4xl font-black text-orange-500">
+                {{ statsBandeau.restant }}
+            </p>
+        </div>
+    </div>
+    {# --- 2. GRAPHIQUE BARRES EMPILÉES --- #}
+    <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-100 mb-10">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-slate-800 italic uppercase tracking-tighter">
+                Heures saisie par développeur
+            </h3>
+            <span class="text-xs font-bold text-slate-400 uppercase bg-slate-100 px-3 py-1 rounded-full">
+                {{ current_start_date|date('d M') }} - {{ current_end_date|date('d M Y') }}
+            </span>
+        </div>
+        
+        <div class="h-[450px]">
+            {{ render_chart(stackedChart) }}
+        </div>
+    </div>
+
+    <div id="entries-table" class="scroll-mt-10"></div>
+    {# COMPTEUR DE RÉSULTATS #}
+    <div class="mb-3 text-sm text-gray-600 font-semibold">
+        Total des saisies trouvées : {{ pagination.getTotalItemCount }}
+    </div>
+
+    {# TABLEAU DES SAISIES #}
+    {# --- PRÉPARATION POUR LE COMPOSANT TABLEAU --- #}
+    {% set currentSort = pagination.getPaginatorOption('sortField') %}
+    {% set currentDir = pagination.getDirection() %}
+    {% set tableColumns = [
+        knp_pagination_sortable(pagination, 'Développeur ' ~ (app.request.query.get('sort') == 'u.lastname' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'u.lastname'),
+    knp_pagination_sortable(pagination, 'Date ' ~ (app.request.query.get('sort') == 'h.startDate' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'h.startDate'),
+    'Horaire & Durée',
+    knp_pagination_sortable(pagination, 'Activité ' ~ (app.request.query.get('sort') == 'a.label' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'a.label'),
+    knp_pagination_sortable(pagination, 'Projet ' ~ (app.request.query.get('sort') == 'p.name' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'p.name'),
+    'Commentaire',
+    'Action'
+    ] %}
+
+    {% set tableData = [] %}
+    {% for entry in pagination %}
+        {% set duration = entry.startDate.diff(entry.endDate) %}
+        
+        {% set row = [
+            '<span class="font-medium">' ~ (entry.user.lastname|slice(0, 1)|upper ~ '. ' ~ entry.user.firstname) ~ '</span>',
+            entry.startDate|date('d/m/Y'),
+            '<span class="badge" style="background-color: ' ~ entry.user.color|default('#6c757d') ~ '">' ~ entry.startDate|date('H:i') ~ ' - ' ~ entry.endDate|date('H:i') ~ '</span><br><small class="text-muted">(' ~ duration.h ~ 'h' ~ (duration.i > 0 ? "%02d"|format(duration.i) : "") ~ ')</small>',
+            entry.activity ? '<span class="badge" style="background-color: ' ~ entry.activity.color|default('#6c757d') ~ '">' ~ entry.activity.label ~ '</span>' : '<span class="text-muted italic">Aucune</span>',
+            entry.project ? entry.project.name : '-',
+            '<span class="text-sm" title="' ~ entry.commentary ~ '">' ~ entry.commentary|default('-') ~ '</span>',
+            '<div class="flex gap-2">
+                <a href="' ~ path('manager_hour_entry_edit', {'id': entry.id}) ~ '" class="btn btn-sm btn-outline-primary">Modifier</a>
+                <form method="post" action="' ~ path('manager_hour_entry_delete', {'id': entry.id}|merge(app.request.query.all)) ~ '" onsubmit="return confirm(\'Supprimer cette saisie ?\');" style="display:inline;">
+                    <input type="hidden" name="_token" value="' ~ csrf_token('delete' ~ entry.id) ~ '">
+                    <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+                </form>
+            </div>'
+        ] %}
+        {% set tableData = tableData|merge([row]) %}
+    {% endfor %}
+
+    {# --- AFFICHAGE VIA LE COMPOSANT --- #}
+    {{ include('composants/table_data.html.twig', {
+        'columns': tableColumns,
+        'data': tableData
+    }) }}
+
+    {# PAGINATION #}
+    <div class="mt-4 flex justify-center">
+        {{ knp_pagination_render(pagination) }}
+    </div>
+
+</div>
+
+
+{% endblock %}

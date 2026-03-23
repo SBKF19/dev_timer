@@ -65,9 +65,9 @@ class HourEntryFixtures extends Fixture implements DependentFixtureInterface
 
         foreach ($hourEntries as $index => $data) {
             $hourEntry = new HourEntry();
-            $hourEntry->setActivities($data['activity_id']);
-            $hourEntry->setUserId($data['user_id']);
-            $hourEntry->setProjectId($data['project_id']);
+            $hourEntry->setActivity($data['activity_id']);
+            $hourEntry->setUser($data['user_id']);
+            $hourEntry->setProject($data['project_id']);
             $hourEntry->setStartDate($data['start_date']);
             $hourEntry->setEndDate($data['end_date']);
             $hourEntry->setCommentary($data['commentary']);

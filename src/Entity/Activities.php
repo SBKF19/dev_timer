@@ -30,7 +30,7 @@ class Activities
     /**
      * @var Collection<int, HourEntry>
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'activities')]
+    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'activity')]
     private Collection $hourEntries;
 
     public function __construct()
@@ -110,7 +110,7 @@ class Activities
     {
         if (!$this->hourEntries->contains($hourEntry)) {
             $this->hourEntries->add($hourEntry);
-            $hourEntry->setActivities($this);
+            $hourEntry->setactivity($this);
         }
 
         return $this;
@@ -120,8 +120,8 @@ class Activities
     {
         if ($this->hourEntries->removeElement($hourEntry)) {
             // set the owning side to null (unless already changed)
-            if ($hourEntry->getActivities() === $this) {
-                $hourEntry->setActivities(null);
+            if ($hourEntry->getactivity() === $this) {
+                $hourEntry->setactivity(null);
             }
         }
 

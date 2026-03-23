@@ -3,10 +3,12 @@
 namespace App\Entity;
 
 use App\Repository\ProjectRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
 class Project
@@ -17,16 +19,24 @@ class Project
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le nom du projet est obligatoire.")]
+    #[Assert\Length(
+        min: 3,
+        max: 255,
+        minMessage: "Le nom doit faire au moins {{ limit }} caractères."
+    )]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private ?\DateTimeImmutable $created_at = null;
+    #[Assert\NotNull(message: "La date de création est requise.")]
+    #[Assert\Type("\DateTimeImmutable")]
+    private ?DateTimeImmutable $created_at = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $archived_at = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $archived_at = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $color = null;
@@ -37,26 +47,27 @@ class Project
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'managedProjects')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: "Veuillez sélectionner un responsable de projet.")]
     private ?User $manager = null;
 
     /**
      * @var Collection<int, User>
      */
-    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'projects')]
+    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'projects')]
     private Collection $usersInProject;
 
     /**
      * @var Collection<int, HourEntry>
      */
-    #[ORM\OneToMany(targetEntity: HourEntry::class, mappedBy: 'link')]
-    private Collection $link;
+    #[ORM\OneToMany(mappedBy: 'project', targetEntity: HourEntry::class)]
+    private Collection $hourEntries;
 
     public function __construct()
     {
         $this->usersInProject = new ArrayCollection();
         $this->link = new ArrayCollection();
-        $this->created_at = new \DateTimeImmutable();
-
+        $this->created_at = new DateTimeImmutable();
+        $this->hourEntries = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -68,6 +79,7 @@ class Project
     {
         return $this->name;
     }
+
     public function setName(string $name): static
     {
         $this->name = $name;
@@ -78,21 +90,29 @@ class Project
     {
         return $this->description;
     }
+
     public function setDescription(?string $description): static
     {
         $this->description = $description;
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->created_at;
+    }
+
+    public function setCreatedAt(?DateTimeImmutable $created_at): static
+    {
+        $this->created_at = $created_at;
+        return $this;
     }
 
     public function getManager(): ?User
     {
         return $this->manager;
     }
+
     public function setManager(?User $manager): static
     {
         $this->manager = $manager;
@@ -111,6 +131,7 @@ class Project
             $this->usersInProject->add($user);
             $user->addProject($this);
         }
+
         return $this;
     }
 
@@ -119,7 +140,12 @@ class Project
         if ($this->usersInProject->removeElement($user)) {
             $user->removeProject($this);
         }
+
         return $this;
+    }
+    public function getArchivedAt(): ?DateTimeImmutable
+    {
+        return $this->archived_at;
     }
 
     public function setArchivedAt(?\DateTimeInterface $archived_at): static
@@ -153,29 +179,34 @@ class Project
     /**
      * @return Collection<int, HourEntry>
      */
-    public function getLink(): Collection
+    public function getHourEntries(): Collection
     {
-        return $this->link;
+        return $this->hourEntries;
     }
 
-    public function addLink(HourEntry $link): static
+    public function addHourEntry(HourEntry $hourEntry): static
     {
-        if (!$this->link->contains($link)) {
-            $this->link->add($link);
-            $link->setLink($this);
+        if (!$this->hourEntries->contains($hourEntry)) {
+            $this->hourEntries->add($hourEntry);
+            $hourEntry->setProject($this);
         }
 
         return $this;
     }
 
-    public function removeLink(HourEntry $link): static
+    public function removeHourEntry(HourEntry $hourEntry): static
     {
-        if ($this->link->removeElement($link)) {
-            if ($link->getLink() === $this) {
-                $link->setLink(null);
+        if ($this->hourEntries->removeElement($hourEntry)) {
+            if ($hourEntry->getProject() === $this) {
+                $hourEntry->setProject(null);
             }
         }
 
         return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->archived_at === null;
     }
 }
