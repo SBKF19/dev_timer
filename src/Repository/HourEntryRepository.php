@@ -38,9 +38,9 @@ class HourEntryRepository extends ServiceEntityRepository
      * Vérifie s'il existe une saisie qui chevauche la période donnée pour un utilisateur
      */
     public function hasOverlappingEntry(
-        \App\Entity\User $user, 
-        \DateTimeInterface $start, 
-        \DateTimeInterface $end, 
+        \App\Entity\User $user,
+        \DateTimeInterface $start,
+        \DateTimeInterface $end,
         ?int $ignoreId = null
     ): bool {
         $qb = $this->createQueryBuilder('h')
@@ -56,7 +56,7 @@ class HourEntryRepository extends ServiceEntityRepository
         // Si on est en mode édition, on exclut l'ID actuel
         if ($ignoreId) {
             $qb->andWhere('h.id != :id')
-               ->setParameter('id', $ignoreId);
+                ->setParameter('id', $ignoreId);
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;
@@ -67,12 +67,12 @@ class HourEntryRepository extends ServiceEntityRepository
      * supporte maintenant le filtrage multiple.
      */
     public function getManagerFilteredQuery(
-        \DateTimeInterface $startDate, 
-        \DateTimeInterface $endDate, 
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
         mixed $userId = null,
         mixed $projectId = null
     ): \Doctrine\ORM\Query {
-        
+
         $qb = $this->createQueryBuilder('h')
             ->innerJoin('h.user', 'u')
             ->leftJoin('h.project', 'p')
@@ -88,14 +88,14 @@ class HourEntryRepository extends ServiceEntityRepository
         if ($userId) {
             $operator = is_array($userId) ? 'IN' : '=';
             $qb->andWhere("u.id $operator (:userId)")
-               ->setParameter('userId', $userId);
+                ->setParameter('userId', $userId);
         }
 
         // Gestion du filtre Projet (Simple ou Multiple)
         if ($projectId) {
             $operator = is_array($projectId) ? 'IN' : '=';
             $qb->andWhere("p.id $operator (:projectId)")
-               ->setParameter('projectId', $projectId);
+                ->setParameter('projectId', $projectId);
         }
 
         return $qb->getQuery();
@@ -113,7 +113,7 @@ class HourEntryRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('h')
             ->andWhere('h.user = :user')
             // On cherche toutes les saisies dont le début est compris dans cette journée
-            ->andWhere('h.startDate BETWEEN :start AND :end') 
+            ->andWhere('h.startDate BETWEEN :start AND :end')
             ->setParameter('user', $user)
             ->setParameter('start', $startOfDay)
             ->setParameter('end', $endOfDay)
@@ -126,17 +126,17 @@ class HourEntryRepository extends ServiceEntityRepository
      * Méthode dédiée à la liste filtrée et triable du Manager
      */
     public function getQueryForManagerList(
-        \DateTimeInterface $startDate, 
-        \DateTimeInterface $endDate, 
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
         mixed $userId = null,
         mixed $projectId = null
     ): \Doctrine\ORM\Query {
-        
+
         $qb = $this->createQueryBuilder('h')
             ->innerJoin('h.user', 'u')
             ->leftJoin('h.project', 'p')
             ->leftJoin('h.activity', 'a')
-            ->addSelect('u', 'p', 'a') 
+            ->addSelect('u', 'p', 'a')
             ->where('h.startDate >= :start')
             ->andWhere('h.endDate <= :end')
             ->setParameter('start', $startDate->format('Y-m-d 00:00:00'))
@@ -153,6 +153,29 @@ class HourEntryRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery();
+    }
+
+    public function hasEntriesForDate($user, \DateTimeInterface $date): bool
+    {
+        // On transforme l'interface en un vrai objet DateTimeImmutable
+        $dateImmutable = \DateTimeImmutable::createFromInterface($date);
+
+        // L'éditeur sait maintenant que $dateImmutable possède la méthode setTime()
+        $startOfDay = $dateImmutable->setTime(0, 0, 0);
+        $endOfDay = $dateImmutable->setTime(23, 59, 59);
+
+        $count = $this->createQueryBuilder('h') // 'h' pour HourEntry
+            ->select('COUNT(h.id)')
+            ->andWhere('h.user = :user')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.startDate <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $startOfDay)
+            ->setParameter('end', $endOfDay)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0; // Renvoie vrai s'il y a au moins 1 saisie
     }
 
     //    /**
