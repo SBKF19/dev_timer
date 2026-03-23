@@ -122,6 +122,39 @@ class HourEntryRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Méthode dédiée à la liste filtrée et triable du Manager
+     */
+    public function getQueryForManagerList(
+        \DateTimeInterface $startDate, 
+        \DateTimeInterface $endDate, 
+        mixed $userId = null,
+        mixed $projectId = null
+    ): \Doctrine\ORM\Query {
+        
+        $qb = $this->createQueryBuilder('h')
+            ->innerJoin('h.user', 'u')
+            ->leftJoin('h.project', 'p')
+            ->leftJoin('h.activity', 'a')
+            ->addSelect('u', 'p', 'a') 
+            ->where('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('start', $startDate->format('Y-m-d 00:00:00'))
+            ->setParameter('end', $endDate->format('Y-m-d 23:59:59'));
+
+        if ($userId) {
+            $operator = is_array($userId) ? 'IN' : '=';
+            $qb->andWhere("u.id $operator (:userId)")->setParameter('userId', $userId);
+        }
+
+        if ($projectId) {
+            $operator = is_array($projectId) ? 'IN' : '=';
+            $qb->andWhere("p.id $operator (:projectId)")->setParameter('projectId', $projectId);
+        }
+
+        return $qb->getQuery();
+    }
+
     //    /**
     //     * @return HourEntry[] Returns an array of HourEntry objects
     //     */
