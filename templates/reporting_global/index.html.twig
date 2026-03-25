@@ -159,7 +159,50 @@
                 {{ render_chart(activityPieChart) }}
             </div>
         </div>
+    </div>
+    {# TABLEAU DES SAISIES #}
+    <div id="entries-table" class="scroll-mt-10"></div>
 
+    <div class="mb-3 text-sm text-gray-600 font-semibold">
+        Total des saisies trouvées : {{ pagination.getTotalItemCount }}
+    </div>
+
+    {# TABLEAU DES SAISIES #}
+    {% set currentSort = pagination.getPaginatorOption('sortField') %}
+    {% set currentDir = pagination.getDirection() %}
+
+    {% set tableColumns = [
+        knp_pagination_sortable(pagination, 'Développeur ' ~ (app.request.query.get('sort') == 'u.lastname' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'u.lastname'),
+        knp_pagination_sortable(pagination, 'Date ' ~ (app.request.query.get('sort') == 'h.startDate' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'h.startDate'),
+        'Horaire & Durée',
+        knp_pagination_sortable(pagination, 'Activité ' ~ (app.request.query.get('sort') == 'a.label' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'a.label'),
+        knp_pagination_sortable(pagination, 'Projet ' ~ (app.request.query.get('sort') == 'p.name' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'p.name'),
+        'Commentaire'
+    ] %}
+
+    {% set tableData = [] %}
+    {% for entry in pagination %}
+        {% set duration = entry.startDate.diff(entry.endDate) %}
+        {% set row = [
+            '<span class="font-medium">' ~ (entry.user.lastname|slice(0, 1)|upper ~ '. ' ~ entry.user.firstname) ~ '</span>',
+            entry.startDate|date('d/m/Y'),
+            '<span class="badge" style="background-color: ' ~ entry.user.color|default('#6c757d') ~ '">' ~ entry.startDate|date('H:i') ~ ' - ' ~ entry.endDate|date('H:i') ~ '</span><br><small class="text-muted">(' ~ duration.h ~ 'h' ~ (duration.i > 0 ? "%02d"|format(duration.i) : "") ~ ')</small>',
+            entry.activity ? '<span class="badge" style="background-color: ' ~ entry.activity.color|default('#6c757d') ~ '">' ~ entry.activity.label ~ '</span>' : '<span class="text-muted italic">Aucune</span>',
+            entry.project ? entry.project.name : '-',
+            '<span class="text-sm" title="' ~ entry.commentary ~ '">' ~ (entry.commentary|length > 60 ? entry.commentary|slice(0, 60) ~ '...' : entry.commentary|default('-')) ~ '</span>'
+        ] %}
+        {% set tableData = tableData|merge([row]) %}
+    {% endfor %}
+
+    {# --- AFFICHAGE VIA LE COMPOSANT --- #}
+    {{ include('composants/table_data.html.twig', {
+        'columns': tableColumns,
+        'data': tableData
+    }) }}
+
+    {# PAGINATION #}
+    <div class="mt-4 flex justify-center">
+        {{ knp_pagination_render(pagination) }}
     </div>
 </div>
 
