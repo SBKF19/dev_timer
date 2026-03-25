@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
 use Symfony\UX\Chartjs\Model\Chart;
+use Knp\Component\Pager\PaginatorInterface;
 
 #[Route('/reporting-global', name: 'reporting_global_')]
 class ReportingGlobalController extends AbstractController
@@ -23,7 +24,8 @@ class ReportingGlobalController extends AbstractController
         UserRepository $userRepo,
         ProjectRepository $projectRepo,
         TimeStatsService $timeStatsService,
-        ChartBuilderInterface $chartBuilder
+        ChartBuilderInterface $chartBuilder,
+        PaginatorInterface $paginator
     ): Response {
         $today = new \DateTime();
         $period = $request->query->get('period');
@@ -145,6 +147,14 @@ class ReportingGlobalController extends AbstractController
             ],
         ]);
 
+        $queryBuilder = $hourEntryRepo->getQueryForManagerList($startDate, $endDate, $userIds, $projectIds);
+    
+        $pagination = $paginator->paginate(
+            $queryBuilder,
+            $request->query->getInt('page', 1),
+            10
+        );
+
         return $this->render('reporting_global/index.html.twig', [
             'users' => $userRepo->findBy(['status' => true], ['lastname' => 'ASC']),
             'projects' => $projectRepo->findAll(),
@@ -161,6 +171,7 @@ class ReportingGlobalController extends AbstractController
             'activityChart' => $activityChart,
             'userChart' => $userChart,
             'activityPieChart' => $activityPieChart,
+            'pagination' => $pagination,
         ]);
     }
 }
