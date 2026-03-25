@@ -209,4 +209,231 @@ class TimeStatsService
             'datasets' => array_values($datasets)
         ];
     }
+
+    public function getProjectChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    {
+        $qb = $this->hourEntryRepository->createQueryBuilder('h')
+            ->select('h', 'p')
+            ->leftJoin('h.project', 'p')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
+
+        if (!empty($projectIds)) {
+            $qb->andWhere('h.project IN (:projectIds)')->setParameter('projectIds', $projectIds);
+        }
+
+        $entries = $qb->getQuery()->getResult();
+
+        $diff = $startDate->diff($endDate);
+        $isMonthlyView = $diff->days > 60;
+        $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
+        $period = new \DatePeriod($startDate, $interval, (clone $endDate)->modify('+1 day'));
+
+        $labels = [];
+        $dateMapping = [];
+        foreach ($period as $index => $date) {
+            $label = $date->format($isMonthlyView ? 'M Y' : 'd/m');
+            $labels[] = $label;
+            $dateMapping[$date->format($isMonthlyView ? 'Y-m' : 'Y-m-d')] = $index;
+        }
+
+        $datasets = [];
+        foreach ($entries as $entry) {
+            $project = $entry->getProject();
+            if (!$project) continue;
+
+            $pId = $project->getId();
+            if (!isset($datasets[$pId])) {
+                $datasets[$pId] = [
+                    'label' => $project->getName(),
+                    'backgroundColor' => $project->getColor() ?? '#cbd5e1',
+                    'data' => array_fill(0, count($labels), 0),
+                    'stack' => 'combined',
+                ];
+            }
+
+            $duration = ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+            $dateKey = $entry->getStartDate()->format($isMonthlyView ? 'Y-m' : 'Y-m-d');
+            
+            if (isset($dateMapping[$dateKey])) {
+                $datasets[$pId]['data'][$dateMapping[$dateKey]] += round($duration / 60, 2);
+            }
+        }
+
+        return ['labels' => $labels, 'datasets' => array_values($datasets)];
+    }
+
+    public function getActivityChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    {
+        $diff = $startDate->diff($endDate);
+        $isMonthlyView = $diff->days > 60;
+        $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
+        $period = new \DatePeriod($startDate, $interval, (clone $endDate)->modify('+1 day'));
+
+        $labels = [];
+        $datasets = [];
+        $remainingData = [];
+
+        $remainingDataset = [
+            'label' => 'Heures manquantes',
+            'backgroundColor' => '#f97316',
+            'data' => [],
+            'stack' => 'stack0'
+        ];
+
+        foreach ($period as $date) {
+            $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
+            
+            $stepStart = (clone $date)->setTime(0, 0, 0);
+            $stepEnd = $isMonthlyView ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) : (clone $date)->setTime(23, 59, 59);
+
+            $totalStepTheorique = 0;
+            $totalStepSaisi = 0;
+            $stepActivities = [];
+
+            foreach ($users as $user) {
+                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), (clone $stepEnd)->modify('+1 second'));
+                foreach ($subPeriod as $day) {
+                    if (!$this->holidayRepository->findOneBy(['date' => $day])) {
+                        $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
+                        foreach ($schedules as $s) {
+                            $diffS = $s->getStartTime()->diff($s->getEndTime());
+                            $totalStepTheorique += ($diffS->h * 60) + $diffS->i;
+                        }
+                    }
+                }
+
+                $qb = $this->hourEntryRepository->createQueryBuilder('h')
+                    ->join('h.activity', 'a')
+                    ->where('h.user = :u')
+                    ->andWhere('h.startDate >= :s')
+                    ->andWhere('h.endDate <= :e')
+                    ->setParameter('u', $user)
+                    ->setParameter('s', $stepStart)
+                    ->setParameter('e', $stepEnd);
+
+                if (!empty($projectIds)) {
+                    $qb->andWhere('h.project IN (:p)')->setParameter('p', $projectIds);
+                }
+
+                foreach ($qb->getQuery()->getResult() as $entry) {
+                    $act = $entry->getActivity();
+                    $d = $entry->getStartDate()->diff($entry->getEndDate());
+                    $mins = ($d->h * 60) + $d->i;
+                    
+                    $totalStepSaisi += $mins;
+                    $stepActivities[$act->getId()]['label'] = $act->getLabel();
+                    $stepActivities[$act->getId()]['color'] = $act->getColor();
+                    $stepActivities[$act->getId()]['minutes'] = ($stepActivities[$act->getId()]['minutes'] ?? 0) + $mins;
+                }
+            }
+            foreach ($stepActivities as $id => $info) {
+                if (!isset($datasets[$id])) {
+                    $datasets[$id] = [
+                        'label' => $info['label'],
+                        'backgroundColor' => $info['color'] ?? '#cbd5e1',
+                        'data' => array_fill(0, count($labels) - 1, 0),
+                        'stack' => 'stack0'
+                    ];
+                }
+                $datasets[$id]['data'][] = round($info['minutes'] / 60, 2);
+            }
+
+            foreach ($datasets as $id => &$ds) {
+                if (count($ds['data']) < count($labels)) {
+                    $ds['data'][] = 0;
+                }
+            }
+            $remaining = max(0, ($totalStepTheorique - $totalStepSaisi) / 60);
+            $remainingDataset['data'][] = round($remaining, 2);
+        }
+
+        $finalDatasets = array_values($datasets);
+        $finalDatasets[] = $remainingDataset;
+
+        return ['labels' => $labels, 'datasets' => $finalDatasets];
+    }
+
+    public function getUserTotalDevChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    {
+        $qb = $this->hourEntryRepository->createQueryBuilder('h')
+            ->select('h', 'u', 'a')
+            ->join('h.user', 'u')
+            ->leftJoin('h.activity', 'a')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
+
+        if (!empty($projectIds)) {
+            $qb->andWhere('h.project IN (:projectIds)')->setParameter('projectIds', $projectIds);
+        }
+
+        $entries = $qb->getQuery()->getResult();
+
+        $dataMap = [];
+        foreach ($users as $user) {
+            $dataMap[$user->getId()] = [
+                'name' => $user->getFirstname() . ' ' . $user->getLastname(),
+                'color' => $user->getColor() ?? '#cbd5e1',
+                'minutes' => 0
+            ];
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry->getActivity()?->isDeveloping()) {
+                $diff = $entry->getStartDate()->diff($entry->getEndDate());
+                $minutes = ($diff->h * 60) + $diff->i;
+                $dataMap[$entry->getUser()->getId()]['minutes'] += $minutes;
+            }
+        }
+
+        $labels = [];
+        $values = [];
+        $colors = [];
+
+        foreach ($dataMap as $userData) {
+            if ($userData['minutes'] > 0) {
+                $labels[] = $userData['name'];
+                $values[] = round($userData['minutes'] / 60, 2);
+                $colors[] = $userData['color'];
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => [
+                [
+                    'data' => $values,
+                    'backgroundColor' => $colors,
+                ]
+            ]
+        ];
+    }
+
+    public function getActivityTotalChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    {
+        $rawData = $this->getActivityChartRawData($users, $startDate, $endDate, $projectIds);
+        
+        $labels = [];
+        $values = [];
+        $colors = [];
+
+        foreach ($rawData['datasets'] as $ds) {
+            $labels[] = $ds['label'];
+            $values[] = array_sum($ds['data']);
+            $colors[] = $ds['backgroundColor'];
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => [['data' => $values, 'backgroundColor' => $colors]]
+        ];
+    }
 }
