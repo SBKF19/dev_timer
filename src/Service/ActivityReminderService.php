@@ -6,13 +6,15 @@ use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
 use App\Repository\UserRepository;
 use App\Repository\HourEntryRepository;
+use App\Repository\HolidayRepository;
 
 class ActivityReminderService
 {
     public function __construct(
         private MailerInterface $mailer,
         private UserRepository $userRepository,
-        private HourEntryRepository $hourEntryRepository
+        private HourEntryRepository $hourEntryRepository,
+        private HolidayRepository $holidayRepository
     ) {
     }
 
@@ -28,8 +30,16 @@ class ActivityReminderService
 
             // 2. Vérifier les activités sur les 7 derniers jours
             for ($i = 1; $i <= 7; $i++) {
+
+                // Weekend ? on passe
                 $dateToCheck = $today->modify("- $i days");
                 if (in_array($dateToCheck->format('N'), [6, 7])) {
+                    continue;
+                }
+
+                // Jour férie ? on passe
+                $isHoliday = $this->holidayRepository->findOneBy(['date' => \DateTime::createFromImmutable($dateToCheck)]);
+                if ($isHoliday) {
                     continue;
                 }
 
@@ -53,6 +63,7 @@ class ActivityReminderService
                     ]);
 
                 $this->mailer->send($email);
+                sleep(10);
             }
         }
     }
