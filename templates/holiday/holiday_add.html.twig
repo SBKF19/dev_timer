@@ -3,26 +3,38 @@
 {% block title %}Ajouter un jour férié{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-white flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl bg-white border border-[#E3E3E3] rounded-xl shadow-sm p-12">
+<div class="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-sm p-12">
 
-        <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Gestion des jours fériés</h1>
-        <h2 class="text-[#000000] text-lg font-semibold mb-10">Ajout d'un jour férié</h2>
+        <header class="mb-10">
+            <h1 class="text-slate-900 text-2xl font-bold mb-2">Gestion des jours fériés</h1>
+            <h2 class="text-slate-500 text-lg font-semibold">Ajout d'un jour férié</h2>
+        </header>
 
         {{ form_start(HolidayFormType, { attr: { id: 'holiday_form_add'} }) }}
             {{ include("form/form_holiday.html.twig") }}
-        {{ form_end(HolidayFormType) }}
+        {{ form_end(HolidayFormType, {'render_rest': false}) }}
 
         <div class="flex flex-row justify-between items-center mt-12 gap-6">
-            <a href="{{ path('app_holiday') }}"
-               class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none flex items-center justify-center">
-                Retour
-            </a>
+            <div class="flex-1">
+                <a href="{{ path('app_holiday') }}" class="w-full">
+                    {{ include('composants/button.html.twig', {
+                        type: 'annuler', 
+                        label: 'Retour'
+                    }) }}
+                </a>
+            </div>
 
-            <button type="submit" form="holiday_form_add"
-                    class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case text-base font-medium">
-                Ajouter
-            </button>
+            <div class="flex-1">
+                    {{ include('composants/button.html.twig', {
+                        type: 'confirmer', 
+                        label: 'Ajouter',
+                        attr: {
+                            'form': 'holiday_form_add',
+                            'type': 'submit'
+                        }
+                    }) }}
+            </div>
         </div>
 
     </div>
