@@ -13,27 +13,29 @@
 
         {{ form_start(HolidayFormType, { attr: { id: 'holiday_form_add'} }) }}
             {{ include("form/form_holiday.html.twig") }}
+            {{ form_widget(ScheduleFormType._token) }}
         {{ form_end(HolidayFormType, {'render_rest': false}) }}
 
-        <div class="flex flex-row justify-between items-center mt-12 gap-6">
+        <div class="flex flex-row items-stretch mt-12 gap-6">
             <div class="flex-1">
-                <a href="{{ path('app_holiday') }}" class="w-full">
-                    {{ include('composants/button.html.twig', {
-                        type: 'annuler', 
-                        label: 'Retour'
-                    }) }}
-                </a>
+                {{ include('composants/button.html.twig', {
+                    href: path('app_holiday'),
+                    type: 'annuler', 
+                    label: 'Retour',
+                    class: 'w-full h-12 flex items-center justify-center'
+                }) }} 
             </div>
 
             <div class="flex-1">
-                    {{ include('composants/button.html.twig', {
-                        type: 'confirmer', 
-                        label: 'Ajouter',
-                        attr: {
-                            'form': 'holiday_form_add',
-                            'type': 'submit'
-                        }
-                    }) }}
+                {{ include('composants/button.html.twig', {
+                    type: 'confirmer', 
+                    label: 'Ajouter',
+                    class: 'w-full h-12',
+                    attr: {
+                        'form': 'holiday_form_add',
+                        'type': 'submit'
+                    }
+                }) }}
             </div>
         </div>
 

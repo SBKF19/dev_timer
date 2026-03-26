@@ -1,35 +1,82 @@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-    <div class="md:col-span-2">
-        {{ form_row(ScheduleFormType.dayOfWeek) }}
-    </div>
-
-    <div class="md:col-span-2">
-        {{ form_row(ScheduleFormType.period) }}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+    
+    <div class="form-control">
+        {{ include('composants/select_multi.html.twig', {
+            label: 'Jour de la semaine',
+            name: ScheduleFormType.dayOfWeek.vars.full_name,
+            id: ScheduleFormType.dayOfWeek.vars.id,
+            multiple: false,
+            placeholder: 'Choisir un jour...',
+            items: [
+                {'id': 1, 'label': 'Lundi'},
+                {'id': 2, 'label': 'Mardi'},
+                {'id': 3, 'label': 'Mercredi'},
+                {'id': 4, 'label': 'Jeudi'},
+                {'id': 5, 'label': 'Vendredi'},
+                {'id': 6, 'label': 'Samedi'},
+                {'id': 7, 'label': 'Dimanche'}
+            ],
+            value: ScheduleFormType.dayOfWeek.vars.value
+        }) }}
+        <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.dayOfWeek) }}</div>
     </div>
 
     <div class="form-control">
-        {{ form_label(ScheduleFormType.startTime) }}
+        {{ include('composants/select_multi.html.twig', {
+            label: 'Période',
+            name: ScheduleFormType.period.vars.full_name,
+            id: ScheduleFormType.period.vars.id,
+            multiple: false,
+            placeholder: 'Sélectionner la période...',
+            items: [
+                {'id': 'Matin', 'label': 'Matin'},
+                {'id': 'Après-midi', 'label': 'Après-midi'}
+            ],
+            value: ScheduleFormType.period.vars.value
+        }) }}
+        <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.period) }}</div>
+    </div>
+
+    <div class="form-control">
+        <label class="mb-1 text-[15px] font-normal text-gray-500">
+            Heure de début {% if ScheduleFormType.startTime.vars.required %}<span class="font-light">- champ obligatoire</span>{% endif %}
+        </label>
         <div class="relative flex items-center">
-            <span class="absolute left-4 z-10 text-[#B4B4B4]">
+            <span class="absolute left-4 z-10 text-gray-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </span>
-            {{ form_widget(ScheduleFormType.startTime) }}
+            {{ form_widget(ScheduleFormType.startTime, {
+                'attr': {
+                    'class': 'block w-full h-12 pl-12 pr-4 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                }
+            }) }}
         </div>
-        {{ form_errors(ScheduleFormType.startTime) }}
+        <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.startTime) }}</div>
     </div>
 
     <div class="form-control">
-        {{ form_label(ScheduleFormType.endTime) }}
+        <label class="mb-1 text-[15px] font-normal text-gray-500">
+            Heure de fin {% if ScheduleFormType.endTime.vars.required %}<span class="font-light">- champ obligatoire</span>{% endif %}
+        </label>
         <div class="relative flex items-center">
-            <span class="absolute left-4 z-10 text-[#B4B4B4]">
+            <span class="absolute left-4 z-10 text-gray-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </span>
-            {{ form_widget(ScheduleFormType.endTime) }}
+            {{ form_widget(ScheduleFormType.endTime, {
+                'attr': {
+                    'class': 'block w-full h-12 pl-12 pr-4 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                }
+            }) }}
         </div>
-        {{ form_errors(ScheduleFormType.endTime) }}
+        <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.endTime) }}</div>
     </div>
+
+</div>
+
+<div class="hidden">
+    {{ form_rest(ScheduleFormType) }}
 </div>
