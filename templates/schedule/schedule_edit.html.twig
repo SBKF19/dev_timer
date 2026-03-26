@@ -3,35 +3,134 @@
 {% block title %}Modifier l'horaire{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl bg-white border border-[#E3E3E3] rounded-xl shadow-sm p-12">
+{# 1. PRÉPARATION DES DONNÉES (Pour éviter les erreurs de syntaxe Twig dans l'include) #}
+{% set days = {1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche'} %}
+{% set currentDayId = ScheduleFormType.dayOfWeek.vars.value|default(schedule.dayOfWeek) %}
+{% set currentPeriod = ScheduleFormType.period.vars.value|default(schedule.period) %}
 
-        <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Horaires de l'entreprise</h1>
-        <h2 class="text-[#000000] text-lg font-semibold mb-10">Modification des horaires</h2>
+{# On transforme les valeurs en JSON pour le composant Alpine.js #}
+{% set day_json = currentDayId ? {id: currentDayId|number_format, label: days[currentDayId]}|json_encode : 'null' %}
+{% set period_json = currentPeriod ? {id: currentPeriod, label: currentPeriod}|json_encode : 'null' %}
+
+<div class="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-sm p-12">
+
+        <header class="mb-10">
+            <h1 class="text-slate-900 text-2xl font-bold mb-2">Horaires de l'entreprise</h1>
+            <h2 class="text-slate-500 text-lg font-semibold">Modification des horaires</h2>
+        </header>
 
         {{ form_start(ScheduleFormType, { attr: { id: 'schedule_form_edit'} }) }}
-            {{ include("form/form_schedule.html.twig") }}
-        {{ form_end(ScheduleFormType) }}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+                
+                <div class="form-control">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Jour de la semaine',
+                        name: ScheduleFormType.dayOfWeek.vars.full_name,
+                        multiple: false,
+                        items: [
+                            {'id': 1, 'label': 'Lundi'},
+                            {'id': 2, 'label': 'Mardi'},
+                            {'id': 3, 'label': 'Mercredi'},
+                            {'id': 4, 'label': 'Jeudi'},
+                            {'id': 5, 'label': 'Vendredi'},
+                            {'id': 6, 'label': 'Samedi'},
+                            {'id': 7, 'label': 'Dimanche'}
+                        ],
+                        initial_value: day_json|raw
+                    }) }}
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.dayOfWeek) }}</div>
+                </div>
 
-        <div class="flex flex-row justify-between items-center mt-12 gap-6">
+                <div class="form-control">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Période',
+                        name: ScheduleFormType.period.vars.full_name,
+                        multiple: false,
+                        items: [
+                            {'id': 'Matin', 'label': 'Matin'},
+                            {'id': 'Après-midi', 'label': 'Après-midi'}
+                        ],
+                        initial_value: period_json|raw
+                    }) }}
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.period) }}</div>
+                </div>
 
-            <a href="{{ path('app_schedule') }}"
-               class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium flex items-center justify-center">
-                Retour
-            </a>
+                <div class="form-control">
+                    <label class="mb-1 text-[15px] font-normal text-gray-500">Heure de début</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 z-10 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        {{ form_widget(ScheduleFormType.startTime, {
+                            'attr': {
+                                'class': 'block w-full h-12 pl-12 pr-4 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            }
+                        }) }}
+                    </div>
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.startTime) }}</div>
+                </div>
 
-            <form method="post" action="{{ path('app_schedule_delete', {'id': schedule.id}) }}" onsubmit="return confirm('Supprimer ce créneau ?');" class="flex-1">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ schedule.id) }}">
-                <button type="submit" class="btn border-none bg-[#FF0000] hover:bg-[#CC0000] text-white w-full h-12 rounded-xl normal-case font-medium">
-                    Supprimer
-                </button>
-            </form>
+                <div class="form-control">
+                    <label class="mb-1 text-[15px] font-normal text-gray-500">Heure de fin</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 z-10 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        {{ form_widget(ScheduleFormType.endTime, {
+                            'attr': {
+                                'class': 'block w-full h-12 pl-12 pr-4 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            }
+                        }) }}
+                    </div>
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.endTime) }}</div>
+                </div>
 
-            <button type="submit" form="schedule_form_edit"
-                    class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case font-medium">
-                Modifier
-            </button>
+            </div>
+            
+            {{ form_widget(ScheduleFormType._token) }}
+        {{ form_end(ScheduleFormType, {'render_rest': false}) }}
+
+        <div class="flex flex-row items-stretch mt-12 gap-4">
+            <div class="flex-1">
+                {{ include('composants/button.html.twig', {
+                    href: path('app_schedule'),
+                    label: 'Retour',
+                    type: 'annuler',
+                    class: 'w-full h-12 flex items-center justify-center'
+                }) }}
+            </div>
+
+            <div class="flex-1">
+                <form method="post" action="{{ path('app_schedule_delete', {'id': schedule.id}) }}" 
+                      onsubmit="return confirm('Supprimer ce créneau ?');" 
+                      class="h-full">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ schedule.id) }}">
+                    {{ include('composants/button.html.twig', {
+                        label: 'Supprimer',
+                        type: 'effacer',
+                        class: 'w-full h-12'
+                    }) }}
+                </form>
+            </div>
+
+            <div class="flex-1">
+                {{ include('composants/button.html.twig', {
+                    label: 'Modifier',
+                    type: 'confirmer',
+                    class: 'w-full h-12',
+                    attr: { 
+                        'form': 'schedule_form_edit',
+                        'type': 'submit'
+                    }
+                }) }}
+            </div>
         </div>
+
     </div>
 </div>
 {% endblock %}
