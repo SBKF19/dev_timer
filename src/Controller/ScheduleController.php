@@ -10,19 +10,27 @@ use App\Entity\Schedule;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\ScheduleRepository;
 use App\Form\ScheduleFormType;
+use Knp\Component\Pager\PaginatorInterface; // Importation du Paginator
 
 final class ScheduleController extends AbstractController
 {
     #[Route('/schedule', name: 'app_schedule')]
-    public function index(ScheduleRepository $scheduleRepository): Response
+    public function index(ScheduleRepository $scheduleRepository, PaginatorInterface $paginator, Request $request): Response
     {
-        $allSchedules = $scheduleRepository->findBy(
-            ['deleted_at' => null],
-            ['dayOfWeek' => 'ASC', 'startTime' => 'ASC']
+        $query = $scheduleRepository->createQueryBuilder('s')
+            ->where('s.deleted_at IS NULL')
+            ->orderBy('s.dayOfWeek', 'ASC')
+            ->addOrderBy('s.startTime', 'ASC')
+            ->getQuery();
+
+        $pagination = $paginator->paginate(
+            $query,
+            $request->query->getInt('page', 1),
+            10
         );
 
         $groupedSchedules = [];
-        foreach ($allSchedules as $schedule) {
+        foreach ($pagination->getItems() as $schedule) {
             $day = $schedule->getDayOfWeek();
             if (!isset($groupedSchedules[$day])) {
                 $groupedSchedules[$day] = [];
@@ -32,6 +40,7 @@ final class ScheduleController extends AbstractController
 
         return $this->render('schedule/schedule_list.html.twig', [
             'schedules' => $groupedSchedules,
+            'pagination' => $pagination, 
         ]);
     }
 
@@ -48,25 +57,20 @@ final class ScheduleController extends AbstractController
             $day = $schedule->getDayOfWeek();
             $period = $schedule->getPeriod();
 
-            // 1. Vérif Heure début < Heure fin
             if ($startTime >= $endTime) {
                 $this->addFlash('error', 'L\'heure de début doit être antérieure à l\'heure de fin.');
             }
-            // 2. heure max pour le matin limité à 13h00
             elseif ($period === 'Matin' && $endTime->format('H:i') > '13:00') {
                 $this->addFlash('error', 'Le matin ne peut pas se terminer après 13h00.');
             }
             else {
                 $repo = $entityManager->getRepository(Schedule::class);
-
-                // 3. Vérif Doublon de Période
                 $duplicate = $repo->findOneBy(['dayOfWeek' => $day, 'period' => $period, 'deleted_at' => null]);
 
                 if ($duplicate) {
                     $this->addFlash('error', "Le créneau du $period pour ce jour existe déjà.");
                 } else {
                     $hasError = false;
-                    // 4. Validation croisée
                     if ($period === 'Après-midi') {
                         $morning = $repo->findOneBy(['dayOfWeek' => $day, 'period' => 'Matin', 'deleted_at' => null]);
                         if ($morning && $startTime < $morning->getEndTime()) {
