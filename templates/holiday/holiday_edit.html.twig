@@ -13,44 +13,51 @@
 
         {{ form_start(HolidayFormType, { attr: { id: 'holiday_form_edit'} }) }}
             {{ include("form/form_holiday.html.twig") }}
+            {{ form_widget(HolidayFormType._token) }}
         {{ form_end(HolidayFormType, {'render_rest': false}) }}
 
-        <div class="flex flex-row justify-between items-center mt-12 gap-4">
             
-            {# Bouton Retour #}
-            <div class="flex-1">
-                <a href="{{ path('app_holiday') }}">
-                    {{ include('composants/button.html.twig', {
-                        type: 'annuler', 
-                        label: 'Retour'
-                    }) }}
-                </a>
-            </div>
+            <div class="flex flex-row justify-between items-center mt-12 gap-4">
+    
+    {# Bouton Retour #}
+    <div class="flex-1">
+        <a href="{{ path('app_holiday') }}">
+            {{ include('composants/button.html.twig', {
+                type: 'annuler', 
+                label: 'Retour'
+            }) }}
+        </a>
+    </div>
 
-            {# Bouton Supprimer #}
-            <div class="flex-1">
-                <form method="post" action="{{ path('app_holiday_delete', {'id': holiday.id}) }}" onsubmit="return confirm('Supprimer ce jour férié ?');">
-                    <input type="hidden" name="_token" value="{{ csrf_token('delete_holiday') }}">
-                    <button type="submit" class="w-full">
-                        {{ include('composants/button.html.twig', {
-                            type: 'effacer', 
-                            label: 'Supprimer'
-                        }) }}
-                    </button>
-                </form>
-            </div>
+    {# Bouton Supprimer #}
+    <div class="flex-1">
+        <form method="post" action="{{ path('app_holiday_delete', {'id': holiday.id}) }}" onsubmit="return confirm('Supprimer ce jour férié ?');">
+            {# Correction de la clé CSRF pour correspondre au Controller #}
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ holiday.id) }}">
+            
+            {# Ici on utilise un bouton simple ou le composant avec type submit #}
+            <button type="submit" class="w-full">
+                {{ include('composants/button.html.twig', {
+                    type: 'effacer', 
+                    label: 'Supprimer'
+                }) }}
+            </button>
+        </form>
+    </div>
 
-            {# Bouton Modifier #}
-            <div class="flex-1">
-                <button type="submit" form="holiday_form_edit" class="w-full">
-                    {{ include('composants/button.html.twig', {
-                        type: 'confirmer', 
-                        label: 'Modifier'
-                    }) }}
-                </button>
-            </div>
+    {# Bouton Modifier #}
+    <div class="flex-1">
+        {{ include('composants/button.html.twig', {
+            label: 'Modifier',
+            type: 'confirmer',
+            attr: {
+                'form': 'holiday_form_edit',
+                'type': 'submit'
+            }
+        }) }}
+    </div>
 
-        </div>
+</div>
     </div>
 </div>
 {% endblock %}
