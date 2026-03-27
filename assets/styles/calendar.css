@@ -10,3 +10,20 @@
     color: #ffffff !important;
     font-weight: 600;
 }
+
+.tippy-box {
+    background-color: #1f2937;
+    color: white;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    
+    max-width: 200px !important;
+    white-space: normal !important;
+    word-wrap: break-word;
+}
+
+.tippy-arrow {
+    color: #1f2937;
+}

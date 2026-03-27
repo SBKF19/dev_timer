@@ -92,6 +92,9 @@ final class HourEntryController extends AbstractController
                 'backgroundColor' => $color,
                 'borderColor' => $color,
                 'textColor' => '#ffffff',
+                'extendedProps' => [
+                    'commentary' => $entry->getCommentary()
+                ],
             ];
         }
 
