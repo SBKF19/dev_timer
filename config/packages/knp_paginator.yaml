@@ -9,4 +9,4 @@ knp_paginator:
         filter_value_name: filterValue
     template:
         pagination: '@KnpPaginator/Pagination/tailwindcss_pagination.html.twig'
-        sortable: '@KnpPaginator/Pagination/font_awesome_sortable_link.html.twig'
+        sortable: '@KnpPaginator/Pagination/sortable_link.html.twig'

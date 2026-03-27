@@ -42,11 +42,13 @@ class HomeController extends AbstractController
             'datasets' => $activityRawData['datasets'],
         ]);
         $activityChart->setOptions($this->getDefaultOptions('Heures par activité'));
+        $completionStats = $timeStatsService->getCompletionStats($this->getUser());
 
         return $this->render('home/home.html.twig', [
             'projectChart' => $projectChart,
             'activityChart' => $activityChart,
-            'monthName' => $startDate->format('F Y') 
+            'monthName' => $startDate->format('F Y') ,
+            'completionStats' => $completionStats,
         ]);
     }
 

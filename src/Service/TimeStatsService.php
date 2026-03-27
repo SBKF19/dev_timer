@@ -472,4 +472,52 @@ class TimeStatsService
             'datasets' => [['data' => $values, 'backgroundColor' => $colors]]
         ];
     }
+
+    public function getCompletionStats(User $user): array
+{
+    // On définit le début et la fin de la semaine actuelle
+    $startOfWeek = new \DateTime('monday this week');
+    $endOfWeek = (clone $startOfWeek)->modify('+6 days');
+
+    // On utilise ta méthode getWeeklyStats déjà existante
+    $stats = $this->getWeeklyStats($user, $startOfWeek, $endOfWeek);
+
+    // Extraction des minutes (on doit refaire le calcul car formatMinutes renvoie une string)
+    // Pour être plus propre, on pourrait modifier getWeeklyStats, 
+    // mais voici comment extraire la donnée brute :
+    
+    // On refait un petit calcul rapide pour avoir le % brut
+    $totalTheo = 0;
+    $totalSaisie = 0;
+    $holidayMap = $this->getHolidayMap();
+    $period = new \DatePeriod($startOfWeek, new \DateInterval('P1D'), (clone $endOfWeek)->modify('+1 day'));
+
+    foreach ($period as $date) {
+        if (isset($holidayMap[$date->format('Y-m-d')])) continue;
+        $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$date->format('N'), $date);
+        foreach ($schedules as $s) {
+            $diff = $s->getStartTime()->diff($s->getEndTime());
+            $totalTheo += ($diff->h * 60) + $diff->i;
+        }
+    }
+
+    $entries = $this->hourEntryRepository->createQueryBuilder('h')
+        ->where('h.user = :u AND h.startDate >= :s AND h.endDate <= :e')
+        ->setParameter('u', $user)->setParameter('s', $startOfWeek)->setParameter('e', $endOfWeek)
+        ->getQuery()->getResult();
+
+    foreach ($entries as $entry) {
+        $diff = $entry->getStartDate()->diff($entry->getEndDate());
+        $totalSaisie += ($diff->h * 60) + $diff->i;
+    }
+
+    $percentage = $totalTheo > 0 ? min(100, round(($totalSaisie / $totalTheo) * 100)) : 0;
+    $missingHours = max(0, round(($totalTheo - $totalSaisie) / 60, 1));
+
+    return [
+        'percentage' => $percentage,
+        'missingHours' => $missingHours,
+    ];
 }
+}
+
