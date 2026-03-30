@@ -1,0 +1,64 @@
+{# templates/reminder/edit.html.twig #}
+{% extends 'base.html.twig' %}
+{% set jours_items = [
+    {id: 1, label: 'Lundi'}, {id: 2, label: 'Mardi'}, {id: 3, label: 'Mercredi'},
+    {id: 4, label: 'Jeudi'}, {id: 5, label: 'Vendredi'}, {id: 6, label: 'Samedi'}, {id: 7, label: 'Dimanche'}
+] %}
+
+{% block body %}
+	{% set jours_labels = {1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche'} %}
+	{% set current_day_id = form.send_day.vars.value %}
+	{% set initial_day = {id: current_day_id, label: jours_labels[current_day_id]}|json_encode %}
+
+	<div class="flex justify-center items-center min-h-screen bg-gray-50">
+		<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm">
+			<h1 class="text-[22px] font-bold text-[#1d3557] mb-6">Modifier le rappel</h1>
+
+			{{ form_start(form) }}
+			<div
+				class="space-y-5">
+				{# Jour actuel présélectionné #}
+				{% include 'composants/select_multi.html.twig' with {
+                    'label': 'Jour de la semaine',
+                    'name': form.send_day.vars.full_name,
+                    'items': jours_items,
+                    'initial_value': initial_day,
+                    'multiple': false
+                } %}
+
+				{% include 'composants/time_picker.html.twig' with {
+                    'label': 'Heure - Champs obligatoire',
+                    'name': form.send_time.vars.full_name,
+                    'value': form.send_time.vars.value,
+                    'required': true
+                } %}
+
+				{% include 'composants/switch.html.twig' with {
+                    'label': 'Rappel actif',
+                    'name': form.is_active.vars.full_name,
+                    'checked': form.is_active.vars.data
+                } %}
+
+				{{ form_widget(form._token) }}
+				<div class="flex gap-4 pt-4">
+					<div class="flex-1">
+						{% include 'composants/button.html.twig' with {
+                            'label': 'Retour',
+                            'href': path('app_reminder_index'),
+                            'type': 'annuler',
+                            'class': 'w-full py-3 rounded-xl'
+                        } %}
+					</div>
+					<div class="flex-1">
+						{% include 'composants/button.html.twig' with {
+                            'label': 'Modifier',
+                            'type': 'confirmer',
+                            'class': 'w-full py-3 rounded-xl'
+                        } %}
+					</div>
+				</div>
+			</div>
+			{{ form_end(form, {'render_rest': false}) }}
+		</div>
+	</div>
+{% endblock %}

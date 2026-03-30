@@ -1,0 +1,55 @@
+{# templates/reminder/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+	<div class="p-8">
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold">Rappels Mails</h1>
+			{% include 'composants/button.html.twig' with {
+            'label': 'Nouveau rappel',
+            'href': path('app_reminder_new'),
+            'type': 'confirmer'
+        } %}
+		</div>
+
+		{% set jours = {1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche'} %}
+
+		{# Préparation des données pour le composant table #}
+		{% set table_data = [] %}
+		{% for r in reminders %}
+			{% set status_html %}
+			<form action="{{ path('app_reminder_activate', {'id': r.id}) }}" method="post">
+				{% include 'composants/switch.html.twig' with {
+                    'name': 'active',
+                    'checked': r.isActive,
+                    'attr': {'onchange': 'this.form.submit()'}
+                } %}
+			</form>
+			{% endset %}
+
+			{% set actions_html %}
+			<div
+				class="flex gap-2 items-center">
+				{# Lien cliquable autour de l'icône #}
+				<a
+					href="{{ path('app_reminder_edit', {'id': r.id}) }}" class="hover:opacity-75 transition-opacity" title="Modifier ce rappel">
+					{# Utilisation de asset() pour pointer vers public/images/modify_icone.png #}
+					<img src="{{ asset('images/modify_icone.png') }}" alt="Modifier" class="h-6 w-6"/>
+				</a>
+			</div>
+			{% endset %}
+
+			{% set table_data = table_data|merge([[
+            jours[r.sendDay],
+            r.sendTime|date('H:i'),
+            status_html,
+            actions_html
+        ]]) %}
+		{% endfor %}
+
+		{% include 'composants/table.html.twig' with {
+        'columns': ['Jour', 'Heure', 'Statut', ''],
+        'data': table_data
+    } %}
+	</div>
+{% endblock %}
