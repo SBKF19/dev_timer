@@ -1,0 +1,210 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reporting Global{% endblock %}
+
+{% block body %}
+{# Préparation des données pour les composants de filtres #}
+{% set userItems = [] %}
+{% for u in users %}
+    {% set userItems = userItems|merge([{ id: u.id, label: u.lastname|upper ~ ' ' ~ u.firstname }]) %}
+{% endfor %}
+
+{% set projectItems = [] %}
+{% for p in projects %}
+    {% set projectItems = projectItems|merge([{ id: p.id, label: p.name }]) %}
+{% endfor %}
+
+<div class="p-6 max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Reporting Global</h1>
+
+    {# --- FORMULAIRE DE FILTRE --- #}
+    <div class="card bg-white p-6 shadow-sm border border-gray-100 rounded-2xl mb-8">
+        <div class="flex items-center gap-2 mb-4 text-gray-700">
+            <span class="font-bold uppercase tracking-wider text-xs">Filtres de recherche</span>
+            <hr class="flex-grow border-gray-200">
+        </div>
+
+        {# Boutons de périodes rapides #}
+        <div class="flex gap-2 mb-6">
+            {% for p in ['week', 'month', 'year'] %}
+                {% set queryParams = app.request.query.all|merge({'period': p}) %}
+                {# On nettoie les paramètres de pagination si présents #}
+                {% set queryParams = queryParams|filter((v, k) => k != 'page') %}
+
+                <a href="{{ path('reporting_global_list', queryParams) }}" 
+                   class="px-4 py-1.5 text-xs rounded-full border transition-all {{ current_period == p ? 'bg-slate-800 text-white' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100' }}">
+                    {{ p == 'week' ? 'Semaine' : (p == 'month' ? 'Mois' : 'Année') }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <form method="get" action="{{ path('reporting_global_list') }}" class="flex flex-wrap md:flex-nowrap items-end gap-4">
+            <div class="flex-grow">
+                {{ include('composants/filter_date_picker.html.twig', { 'label': 'Du', 'name': 'start_date', 'value': current_start_date }) }}
+            </div>
+            <div class="flex-grow">
+                {{ include('composants/filter_date_picker.html.twig', { 'label': 'Au', 'name': 'end_date', 'value': current_end_date }) }}
+            </div>
+            <div class="flex-grow">
+                {{ include('composants/select_multi.html.twig', {
+                    label: 'Développeur',
+                    name: 'user_id',
+                    placeholder: 'Tous les développeurs',
+                    items: userItems,
+                    value: current_user_id,
+                    multiple: true
+                }) }}
+            </div>
+            <div class="flex-grow">
+                {{ include('composants/select_multi.html.twig', {
+                    label: 'Projet',
+                    name: 'project_id',
+                    placeholder: 'Tous les projets',
+                    items: projectItems,
+                    value: current_project_id,
+                    multiple: true
+                }) }}
+            </div>
+
+            <div class="flex gap-2">
+                {{ include('composants/button.html.twig', {type: 'filtrer', label: 'Actualiser'}) }}
+                {{ include('composants/button.html.twig', {
+                        type: 'annuler', 
+                        label: 'Réinitialiser',
+                        href: path('reporting_global_list'),
+                    }) }}
+            </div>
+        </form>
+    </div>
+
+    {# --- BANDEAU DES 4 STATISTIQUES --- #}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        
+        {# Bloc Heures de Développement #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-6 flex flex-col items-center justify-center transition-all hover:shadow-md">
+            <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 text-center">
+                Total Heures Développement
+            </p>
+            <p class="text-3xl font-black text-blue-600">
+                {{ statDev|replace({'h': ' Heures '}) }}
+            </p>
+        </div>
+
+        {# Bloc Heures Manquantes #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-6 flex flex-col items-center justify-center transition-all hover:shadow-md">
+            <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 text-center">
+                Total Heures Manquantes
+            </p>
+            <p class="text-3xl font-black text-red-500">
+                {{ statManquantes|replace({'h': ' Heures '}) }}
+            </p>
+        </div>
+
+        {# Bloc Total Heures Saisies #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-6 flex flex-col items-center justify-center transition-all hover:shadow-md">
+            <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 text-center">
+                Total Heures Saisies
+            </p>
+            <p class="text-3xl font-black text-emerald-500">
+                {{ statSaisies|replace({'h': ' Heures '}) }}
+            </p>
+        </div>
+
+        {# Bloc Heures Hors Développement #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-6 flex flex-col items-center justify-center transition-all hover:shadow-md">
+            <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 text-center">
+                Total Heures Hors Dév.
+            </p>
+            <p class="text-3xl font-black text-slate-700">
+                {{ statNonDev|replace({'h': ' Heures '}) }}
+            </p>
+        </div>
+
+    </div>
+
+    {# Graphique Projets #}
+    <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8 mt-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">Heures de développement saisies par projet</h2>
+        <div class="h-[400px]">
+            {{ render_chart(projectChart) }}
+        </div>
+    </div>
+
+    {# Graphique Activités #}
+    <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">Heures saisie par activité</h2>
+        <div class="h-[400px]">
+            {{ render_chart(activityChart) }}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+    
+        {# Graphique Utilisateurs PIE #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Total des heures par développeur</h2>
+            </div>
+            <div class="h-[400px]">
+                {{ render_chart(userChart) }}
+            </div>
+        </div>
+
+        {# Graphique total activité PIE #}
+        <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Total des heures par type d’activité</h2>
+            </div>
+            <div class="h-[400px]">
+                {{ render_chart(activityPieChart) }}
+            </div>
+        </div>
+    </div>
+    {# TABLEAU DES SAISIES #}
+    <div id="entries-table" class="scroll-mt-10"></div>
+
+    <div class="mb-3 text-sm text-gray-600 font-semibold">
+        Total des saisies trouvées : {{ pagination.getTotalItemCount }}
+    </div>
+
+    {# TABLEAU DES SAISIES #}
+    {% set currentSort = pagination.getPaginatorOption('sortField') %}
+    {% set currentDir = pagination.getDirection() %}
+
+    {% set tableColumns = [
+        knp_pagination_sortable(pagination, 'Développeur ' ~ (app.request.query.get('sort') == 'u.lastname' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'u.lastname'),
+        knp_pagination_sortable(pagination, 'Date ' ~ (app.request.query.get('sort') == 'h.startDate' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'h.startDate'),
+        'Horaire & Durée',
+        knp_pagination_sortable(pagination, 'Activité ' ~ (app.request.query.get('sort') == 'a.label' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'a.label'),
+        knp_pagination_sortable(pagination, 'Projet ' ~ (app.request.query.get('sort') == 'p.name' ? (app.request.query.get('direction') == 'asc' ? '▲' : '▼')), 'p.name'),
+        'Commentaire'
+    ] %}
+
+    {% set tableData = [] %}
+    {% for entry in pagination %}
+        {% set duration = entry.startDate.diff(entry.endDate) %}
+        {% set row = [
+            '<span class="font-medium">' ~ (entry.user.lastname|slice(0, 1)|upper ~ '. ' ~ entry.user.firstname) ~ '</span>',
+            entry.startDate|date('d/m/Y'),
+            '<span class="badge" style="background-color: ' ~ entry.user.color|default('#6c757d') ~ '">' ~ entry.startDate|date('H:i') ~ ' - ' ~ entry.endDate|date('H:i') ~ '</span><br><small class="text-muted">(' ~ duration.h ~ 'h' ~ (duration.i > 0 ? "%02d"|format(duration.i) : "") ~ ')</small>',
+            entry.activity ? '<span class="badge" style="background-color: ' ~ entry.activity.color|default('#6c757d') ~ '">' ~ entry.activity.label ~ '</span>' : '<span class="text-muted italic">Aucune</span>',
+            entry.project ? entry.project.name : '-',
+            '<span class="text-sm" title="' ~ entry.commentary ~ '">' ~ (entry.commentary|length > 60 ? entry.commentary|slice(0, 60) ~ '...' : entry.commentary|default('-')) ~ '</span>'
+        ] %}
+        {% set tableData = tableData|merge([row]) %}
+    {% endfor %}
+
+    {# --- AFFICHAGE VIA LE COMPOSANT --- #}
+    {{ include('composants/table_data.html.twig', {
+        'columns': tableColumns,
+        'data': tableData
+    }) }}
+
+    {# PAGINATION #}
+    <div class="mt-4 flex justify-center">
+        {{ knp_pagination_render(pagination) }}
+    </div>
+</div>
+
+</div>
+{% endblock %}
