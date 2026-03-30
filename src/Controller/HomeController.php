@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\UserRepository;
 use App\Service\TimeStatsService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
@@ -14,19 +15,39 @@ class HomeController extends AbstractController
 {
     #[Route('/home', name: 'app_home')]
     public function index(
+        Request $request,
         UserRepository $userRepo,
         TimeStatsService $timeStatsService,
         ChartBuilderInterface $chartBuilder
     ): Response {
-        //DATES : MOIS EN COURS ---
-        $startDate = new \DateTime('first day of this month 00:00:00');
-        $endDate = new \DateTime('last day of this month 23:59:59');
+        $today = new \DateTime();
+        $period = $request->query->get('period');
 
-        // Récupération des utilisateurs actifs
-        $users = $userRepo->findBy(['status' => true]);
+        // --- 1. GESTION DES DATES (Calculées avant tout le reste) ---
+        if ($period === 'week') {
+            $startDate = (clone $today)->modify('Monday this week')->setTime(0, 0, 0);
+            $endDate = (clone $today)->modify('Sunday this week')->setTime(23, 59, 59);
+        } elseif ($period === 'month') {
+            $startDate = (clone $today)->modify('first day of this month')->setTime(0, 0, 0);
+            $endDate = (clone $today)->modify('last day of this month')->setTime(23, 59, 59);
+        } elseif ($period === 'year') {
+            $startDate = (clone $today)->modify('first day of January this year')->setTime(0, 0, 0);
+            $endDate = (clone $today)->modify('last day of December this year')->setTime(23, 59, 59);
+        } else {
+            // Récupération depuis le formulaire (Filtre personnalisé)
+            $startDateStr = $request->query->get('start_date');
+            $endDateStr = $request->query->get('end_date');
+            
+            // Si pas de dates saisies, on met par défaut la semaine en cours
+            $startDate = $startDateStr ? new \DateTime($startDateStr) : (clone $today)->modify('Monday this week')->setTime(0, 0, 0);
+            $endDate = $endDateStr ? new \DateTime($endDateStr) : (clone $today)->modify('Sunday this week')->setTime(23, 59, 59);
+        }
 
-        //  GRAPHIQUE PAR PROJET ---
-        $projectRawData = $timeStatsService->getProjectChartRawData($users, $startDate, $endDate);
+        // Sécurité : on force l'heure de fin à la dernière seconde de la journée
+        $endDate->setTime(23, 59, 59);
+        
+        // Graphique par Projet
+        $projectRawData = $timeStatsService->getProjectChartRawData($this->getUser(), $startDate, $endDate);
         $projectChart = $chartBuilder->createChart(Chart::TYPE_BAR);
         $projectChart->setData([
             'labels' => $projectRawData['labels'],
@@ -34,26 +55,32 @@ class HomeController extends AbstractController
         ]);
         $projectChart->setOptions($this->getDefaultOptions('Heures par projet'));
 
-        // GRAPHIQUE PAR ACTIVITÉ ---
-        $activityRawData = $timeStatsService->getActivityChartRawData($users, $startDate, $endDate);
+        // Graphique par Activité
+        $activityRawData = $timeStatsService->getActivityChartRawData($this->getUser(), $startDate, $endDate);
         $activityChart = $chartBuilder->createChart(Chart::TYPE_BAR);
         $activityChart->setData([
             'labels' => $activityRawData['labels'],
             'datasets' => $activityRawData['datasets'],
         ]);
         $activityChart->setOptions($this->getDefaultOptions('Heures par activité'));
+
+        // --- 4. AUTRES STATS ---
         $completionStats = $timeStatsService->getCompletionStats($this->getUser());
 
+        // --- 5. RENDU ---
         return $this->render('home/home.html.twig', [
             'projectChart' => $projectChart,
             'activityChart' => $activityChart,
-            'monthName' => $startDate->format('F Y') ,
+            'monthName' => $startDate->format('F Y'),
             'completionStats' => $completionStats,
+            'current_period' => $period,
+            'current_start_date' => $startDate->format('Y-m-d'),
+            'current_end_date' => $endDate->format('Y-m-d'),
         ]);
     }
 
     /**
-     * Configuration commune pour éviter la répétition
+     * Configuration commune pour les graphiques
      */
     private function getDefaultOptions(string $title): array
     {
