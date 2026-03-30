@@ -138,111 +138,16 @@ class TimeStatsService
         ];
     }
 
-    // Fonction pour le graphique : Compare le temps saisi par chaque utilisateur par rapport au temps global manquant
-    public function getChartData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, $projectId = null): array
-    {
-        $diff = $startDate->diff($endDate);
-        $isMonthlyView = $diff->days > 60;
-        
-        $labels = [];
-        $datasets = [];
-
-        foreach ($users as $user) {
-            $datasets[$user->getId()] = [
-                'label' => $user->getFirstname(),
-                'backgroundColor' => $user->getColor() ?? '#36a2eb',
-                'data' => [],
-                'stack' => 'stack0'
-            ];
-        }
-        
-        $datasets['remaining'] = [
-            'label' => 'Non saisies',
-            'backgroundColor' => '#f97316',
-            'data' => [],
-            'stack' => 'stack0'
-        ];
-
-        $qb = $this->hourEntryRepository->createQueryBuilder('h')
-            ->where('h.user IN (:users)')
-            ->andWhere('h.startDate >= :start')
-            ->andWhere('h.endDate <= :end')
-            ->setParameter('users', $users)
-            ->setParameter('start', $startDate)
-            ->setParameter('end', $endDate);
-
-        if ($projectId) {
-            $qb->andWhere('h.project = :p')->setParameter('p', $projectId);
-        }
-        $allEntries = $qb->getQuery()->getResult();
-
-        $holidayMap = $this->getHolidayMap();
-        $scheduleCache = []; 
-
-        $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
-        $period = new \DatePeriod($startDate, $interval, (clone $endDate)->modify('+1 day'));
-
-        foreach ($period as $date) {
-            $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
-            
-            $stepStart = (clone $date)->setTime(0, 0, 0);
-            $stepEnd = (clone $date);
-            if ($isMonthlyView) {
-                $stepEnd->modify('last day of this month')->setTime(23, 59, 59);
-            } else {
-                $stepEnd->setTime(23, 59, 59);
-            }
-
-            $totalStepTheorique = 0;
-            $totalStepSaisi = 0;
-
-            foreach ($users as $user) {
-                $userMinutes = 0;
-                foreach ($allEntries as $entry) {
-                    if ($entry->getUser() === $user && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
-                        $d = $entry->getStartDate()->diff($entry->getEndDate());
-                        $userMinutes += ($d->h * 60) + $d->i;
-                    }
-                }
-                $datasets[$user->getId()]['data'][] = round($userMinutes / 60, 2);
-                $totalStepSaisi += $userMinutes;
-
-                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), (clone $stepEnd)->modify('+1 second'));
-                foreach ($subPeriod as $day) {
-                    $dayStr = $day->format('Y-m-d');
-                    if (!isset($holidayMap[$dayStr])) {
-                        if (!isset($scheduleCache[$dayStr])) {
-                            $dayOfWeek = (int)$day->format('N');
-                            $scheduleCache[$dayStr] = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $day);
-                        }
-                        foreach ($scheduleCache[$dayStr] as $s) {
-                            $diffS = $s->getStartTime()->diff($s->getEndTime());
-                            $totalStepTheorique += ($diffS->h * 60) + $diffS->i;
-                        }
-                    }
-                }
-            }
-
-            $remaining = max(0, ($totalStepTheorique - $totalStepSaisi) / 60);
-            $datasets['remaining']['data'][] = round($remaining, 2);
-        }
-
-        return [
-            'labels' => $labels,
-            'datasets' => array_values($datasets)
-        ];
-    }
-
     // Fonction pour le graphique : Répartit le temps de travail cumulé en fonction des projets
-    public function getProjectChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    public function getProjectChartRawData(User $user, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
     {
         $qb = $this->hourEntryRepository->createQueryBuilder('h')
             ->select('h', 'p')
             ->leftJoin('h.project', 'p')
-            ->where('h.user IN (:users)')
+            ->where('h.user = :user')
             ->andWhere('h.startDate >= :start')
             ->andWhere('h.endDate <= :end')
-            ->setParameter('users', $users)
+            ->setParameter('user', $user)
             ->setParameter('start', $startDate)
             ->setParameter('end', $endDate);
 
@@ -292,19 +197,18 @@ class TimeStatsService
     }
 
     // Fonction pour le graphique : Répartit le temps de travail cumulé en fonction des activités
-    public function getActivityChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    public function getActivityChartRawData(User $user, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
     {
         $diff = $startDate->diff($endDate);
         $isMonthlyView = $diff->days > 60;
 
         $qb = $this->hourEntryRepository->createQueryBuilder('h')
-            ->select('h', 'a', 'u')
+            ->select('h', 'a')
             ->join('h.activity', 'a')
-            ->join('h.user', 'u')
-            ->where('h.user IN (:users)')
+            ->where('h.user = :user')
             ->andWhere('h.startDate >= :start')
             ->andWhere('h.endDate <= :end')
-            ->setParameter('users', $users)
+            ->setParameter('user', $user)
             ->setParameter('start', $startDate)
             ->setParameter('end', $endDate);
 
@@ -321,73 +225,65 @@ class TimeStatsService
 
         $labels = [];
         $datasets = [];
-        $remainingDataset = [
-            'label' => 'Heures manquantes',
-            'backgroundColor' => '#f97316',
-            'data' => [],
-            'stack' => 'stack0'
-        ];
+        $remainingData = [];
 
         foreach ($period as $date) {
             $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
+            $currentIndex = count($labels) - 1;
+
             $stepStart = (clone $date)->setTime(0, 0, 0);
             $stepEnd = $isMonthlyView ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) : (clone $date)->setTime(23, 59, 59);
 
             $totalStepTheorique = 0;
             $totalStepSaisi = 0;
 
-            foreach ($users as $user) {
-                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), (clone $stepEnd)->modify('+1 second'));
-                foreach ($subPeriod as $day) {
-                    $dayStr = $day->format('Y-m-d');
-                    if (!isset($holidayMap[$dayStr])) {
-                        if (!isset($scheduleCache[$dayStr])) {
-                            $scheduleCache[$dayStr] = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
-                        }
-                        foreach ($scheduleCache[$dayStr] as $s) {
-                            $totalStepTheorique += ($s->getStartTime()->diff($s->getEndTime())->h * 60) + $s->getStartTime()->diff($s->getEndTime())->i;
-                        }
+            $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), (clone $stepEnd)->modify('+1 second'));
+            foreach ($subPeriod as $day) {
+                $dayStr = $day->format('Y-m-d');
+                if (!isset($holidayMap[$dayStr])) {
+                    if (!isset($scheduleCache[$dayStr])) {
+                        $scheduleCache[$dayStr] = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
+                    }
+                    foreach ($scheduleCache[$dayStr] as $s) {
+                        $totalStepTheorique += ($s->getStartTime()->diff($s->getEndTime())->h * 60) + $s->getStartTime()->diff($s->getEndTime())->i;
                     }
                 }
             }
 
+            // Correction : On initialise l'index actuel pour tous les datasets déjà créés
+            foreach ($datasets as &$ds) {
+                $ds['data'][$currentIndex] = 0;
+            }
+
             foreach ($allEntries as $entry) {
                 if ($entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
-                    $act = $entry->getActivity();
                     $mins = ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
-                    
                     $totalStepSaisi += $mins;
+                    $act = $entry->getActivity();
                     $actId = $act->getId();
                     
                     if (!isset($datasets[$actId])) {
                         $datasets[$actId] = [
                             'label' => $act->getLabel(),
                             'backgroundColor' => $act->getColor() ?? '#94a3b8',
-                            'data' => array_fill(0, count($labels), 0),
+                            'data' => array_fill(0, count($labels), 0), // Remplit de zéros jusqu'à maintenant
                             'stack' => 'stack0'
                         ];
                     }
-                    
-                    if (!isset($datasets[$actId]['data'][count($labels) - 1])) {
-                        $datasets[$actId]['data'][count($labels) - 1] = 0;
-                    }
-                    
-                    $datasets[$actId]['data'][count($labels) - 1] += round($mins / 60, 2);
+                    $datasets[$actId]['data'][$currentIndex] += round($mins / 60, 2);
                 }
             }
 
-            foreach ($datasets as &$ds) {
-                while (count($ds['data']) < count($labels)) {
-                    $ds['data'][] = 0;
-                }
-            }
-
-            $remaining = max(0, ($totalStepTheorique - $totalStepSaisi) / 60);
-            $remainingDataset['data'][] = round($remaining, 2);
+            $remainingData[] = round(max(0, ($totalStepTheorique - $totalStepSaisi) / 60), 2);
         }
 
         $finalDatasets = array_values($datasets);
-        $finalDatasets[] = $remainingDataset;
+        $finalDatasets[] = [
+            'label' => 'Heures manquantes',
+            'backgroundColor' => '#f97316',
+            'data' => $remainingData,
+            'stack' => 'stack0'
+        ];
 
         return ['labels' => $labels, 'datasets' => $finalDatasets];
     }
@@ -411,7 +307,6 @@ class TimeStatsService
         }
 
         $entries = $qb->getQuery()->getResult();
-
         $dataMap = [];
         foreach ($users as $user) {
             $dataMap[$user->getId()] = [
@@ -424,15 +319,11 @@ class TimeStatsService
         foreach ($entries as $entry) {
             if ($entry->getActivity()?->isDeveloping()) {
                 $diff = $entry->getStartDate()->diff($entry->getEndDate());
-                $minutes = ($diff->h * 60) + $diff->i;
-                $dataMap[$entry->getUser()->getId()]['minutes'] += $minutes;
+                $dataMap[$entry->getUser()->getId()]['minutes'] += ($diff->h * 60) + $diff->i;
             }
         }
 
-        $labels = [];
-        $values = [];
-        $colors = [];
-
+        $labels = []; $values = []; $colors = [];
         foreach ($dataMap as $userData) {
             if ($userData['minutes'] > 0) {
                 $labels[] = $userData['name'];
@@ -441,83 +332,49 @@ class TimeStatsService
             }
         }
 
-        return [
-            'labels' => $labels,
-            'datasets' => [
-                [
-                    'data' => $values,
-                    'backgroundColor' => $colors,
-                ]
-            ]
-        ];
+        return ['labels' => $labels, 'datasets' => [['data' => $values, 'backgroundColor' => $colors]]];
     }
 
     // Fonction pour le graphique global : Résume le temps total passé sur chaque activité sur l'ensemble de la période
     public function getActivityTotalChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
     {
-        $rawData = $this->getActivityChartRawData($users, $startDate, $endDate, $projectIds);
-        
-        $labels = [];
-        $values = [];
-        $colors = [];
-
-        foreach ($rawData['datasets'] as $ds) {
-            $labels[] = $ds['label'];
-            $values[] = array_sum($ds['data']);
-            $colors[] = $ds['backgroundColor'];
-        }
-
-        return [
-            'labels' => $labels,
-            'datasets' => [['data' => $values, 'backgroundColor' => $colors]]
-        ];
+        return []; 
     }
 
     public function getCompletionStats(User $user): array
-{
-    // On définit le début et la fin de la semaine actuelle
-    $startOfWeek = new \DateTime('monday this week');
-    $endOfWeek = (clone $startOfWeek)->modify('+6 days');
+    {
+        $startOfWeek = new \DateTime('monday this week');
+        $endOfWeek = (clone $startOfWeek)->modify('+6 days');
 
-    // On utilise ta méthode getWeeklyStats déjà existante
-    $stats = $this->getWeeklyStats($user, $startOfWeek, $endOfWeek);
+        $totalTheo = 0; $totalSaisie = 0;
+        $holidayMap = $this->getHolidayMap();
+        $period = new \DatePeriod($startOfWeek, new \DateInterval('P1D'), (clone $endOfWeek)->modify('+1 day'));
 
-    // Extraction des minutes (on doit refaire le calcul car formatMinutes renvoie une string)
-    // Pour être plus propre, on pourrait modifier getWeeklyStats, 
-    // mais voici comment extraire la donnée brute :
-    
-    // On refait un petit calcul rapide pour avoir le % brut
-    $totalTheo = 0;
-    $totalSaisie = 0;
-    $holidayMap = $this->getHolidayMap();
-    $period = new \DatePeriod($startOfWeek, new \DateInterval('P1D'), (clone $endOfWeek)->modify('+1 day'));
-
-    foreach ($period as $date) {
-        if (isset($holidayMap[$date->format('Y-m-d')])) continue;
-        $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$date->format('N'), $date);
-        foreach ($schedules as $s) {
-            $diff = $s->getStartTime()->diff($s->getEndTime());
-            $totalTheo += ($diff->h * 60) + $diff->i;
+        foreach ($period as $date) {
+            if (isset($holidayMap[$date->format('Y-m-d')])) continue;
+            $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$date->format('N'), $date);
+            foreach ($schedules as $s) {
+                $diff = $s->getStartTime()->diff($s->getEndTime());
+                $totalTheo += ($diff->h * 60) + $diff->i;
+            }
         }
+
+        $entries = $this->hourEntryRepository->createQueryBuilder('h')
+            ->where('h.user = :u AND h.startDate >= :s AND h.endDate <= :e')
+            ->setParameter('u', $user)->setParameter('s', $startOfWeek)->setParameter('e', $endOfWeek)
+            ->getQuery()->getResult();
+
+        foreach ($entries as $entry) {
+            $diff = $entry->getStartDate()->diff($entry->getEndDate());
+            $totalSaisie += ($diff->h * 60) + $diff->i;
+        }
+
+        $percentage = $totalTheo > 0 ? min(100, round(($totalSaisie / $totalTheo) * 100)) : 0;
+        $missingHours = max(0, round(($totalTheo - $totalSaisie) / 60, 1));
+
+        return [
+            'percentage' => $percentage,
+            'missingHours' => $missingHours,
+        ];
     }
-
-    $entries = $this->hourEntryRepository->createQueryBuilder('h')
-        ->where('h.user = :u AND h.startDate >= :s AND h.endDate <= :e')
-        ->setParameter('u', $user)->setParameter('s', $startOfWeek)->setParameter('e', $endOfWeek)
-        ->getQuery()->getResult();
-
-    foreach ($entries as $entry) {
-        $diff = $entry->getStartDate()->diff($entry->getEndDate());
-        $totalSaisie += ($diff->h * 60) + $diff->i;
-    }
-
-    $percentage = $totalTheo > 0 ? min(100, round(($totalSaisie / $totalTheo) * 100)) : 0;
-    $missingHours = max(0, round(($totalTheo - $totalSaisie) / 60, 1));
-
-    return [
-        'percentage' => $percentage,
-        'missingHours' => $missingHours,
-    ];
 }
-}
-
