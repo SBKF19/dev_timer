@@ -3,75 +3,92 @@
 {% block title %}Accueil - Statistiques{% endblock %}
 
 {% block body %}
-<div class="p-6 max-w-7xl mx-auto pb-20"> 
+<div class="p-6 max-w-7xl mx-auto pb-20 bg-white"> 
     
     <div>
         <h1 class="text-3xl font-bold text-slate-800">Accueil</h1>
     </div>
 
-    {# Force l'espace avec style="..." si Tailwind est bloqué #}
     <div class="grid grid-cols-1 gap-y-12" style="margin-top: 80px;">
         
+        {# Graphique 1 #}
         <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8">
             <div class="flex items-center gap-3 mb-6">
                 <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
                 <h2 class="text-xl font-bold text-gray-800 italic">Heures de développement par projet</h2>
             </div>
-            <div class="h-[400px] relative">
+            <div class="h-[400px] relative text-slate-800">
                 {{ render_chart(projectChart) }}
             </div>
         </div>
 
+        {# Graphique 2 #}
         <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8">
             <div class="flex items-center gap-3 mb-6">
                 <div class="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
                 <h2 class="text-xl font-bold text-gray-800 italic">Heures saisies par activité</h2>
             </div>
-            <div class="h-[400px] relative">
+            <div class="h-[400px] relative text-slate-800">
                 {{ render_chart(activityChart) }}
             </div>
         </div>
 
+        {# Blocs de Progression et de Saisie #}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
             
+            {# Barre de progression #}
             <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8 flex flex-col h-[480px]">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-1.5 h-6 bg-slate-300 rounded-full"></div>
                     <h2 class="text-xl font-bold text-slate-700 italic">État de complétion des heures</h2>
                 </div>
-                <div class="flex-grow flex items-center justify-center relative">
+                <div class="flex-grow flex items-center justify-center">
                     {% set pc = completionStats.percentage|default(0) %}
-                    <div style="position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center;">
-                        <svg width="280" height="280" viewBox="0 0 256 256" style="transform: rotate(-90deg);">
-                            <circle cx="128" cy="128" r="90" stroke="#f1f5f9" stroke-width="20" fill="transparent" />
-                            <circle cx="128" cy="128" r="90" stroke="#94a3b8" stroke-width="20" fill="transparent" 
-                                    stroke-dasharray="565" stroke-dashoffset="{{ 565 - (pc / 100) * 565 }}" 
-                                    stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out;" />
-                        </svg>
-                        <div style="position: absolute; font-size: 4rem; font-weight: 700; color: #1e293b;">{{ pc }}%</div>
+                    
+                    <div class="radial-progress text-slate-800 font-bold" 
+                         style="--value:{{ pc }}; --size:18rem; --thickness: 2rem; background-color: #f8fafc; border: 4px solid #f1f5f9;" 
+                         role="progressbar">
+                         <span class="text-5xl text-slate-800">{{ pc }}%</span>
                     </div>
                 </div>
             </div>
 
+            {# Bloc Saisie des heures  #}
             <div class="bg-white shadow-sm border border-gray-100 rounded-[25px] p-8 flex flex-col h-[480px]">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-1.5 h-6 bg-slate-300 rounded-full"></div>
                     <h2 class="text-xl font-bold text-slate-700 italic">Saisie des heures</h2>
                 </div>
+                
                 <div class="flex-grow flex items-center justify-center px-4">
                     {% set missing = completionStats.missingHours|default(0) %}
-                    <div style="background-color: {{ missing > 0 ? '#e57373' : '#66BB6A' }}; border-radius: 30px; padding: 40px; width: 100%; max-width: 440px; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                        <div>
-                            <div style="font-size: 5rem; font-weight: 800; line-height: 1;">{{ missing > 0 ? missing : '0' }}</div>
-                            <div style="font-size: 1.25rem; font-weight: 500;">retards de saisie</div>
-                        </div>
-                        <div style="background-color: rgba(255,255,255,0.2); padding: 20px; border-radius: 20px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 50px; height: 50px;" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/>
-                            </svg>
+                    
+                    <div class="stats shadow-lg w-full max-w-md rounded-[30px] overflow-hidden">
+                        <div class="stat p-10 text-center relative" 
+                             style="background-color: {{ missing > 0 ? '#ef4444' : '#10b981' }}; color: white;">
+                            
+                            <div class="stat-title text-white opacity-80 font-bold uppercase tracking-widest text-sm">
+                                Retards cumulés
+                            </div>
+                            
+                            <div class="stat-value text-8xl font-black my-2">
+                                {{ missing > 0 ? missing : '0' }}
+                            </div>
+                            
+                            <div class="stat-desc text-white opacity-90 font-medium italic text-lg">
+                                heures à régulariser
+                            </div>
+
+                            {# Icône d'horloge discrète en fond #}
+                            <div class="absolute right-6 top-1/2 -translate-y-1/2 opacity-20 hidden md:block">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-20 h-20 stroke-current">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="mt-4 text-center">
                     <a href="{{ path('hour_entry_list') }}" class="text-slate-400 hover:text-slate-800 font-bold text-lg flex items-center justify-center gap-2 italic">
                         Voir <span>→</span>
