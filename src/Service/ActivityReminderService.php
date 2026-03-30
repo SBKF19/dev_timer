@@ -1,69 +1,51 @@
 <?php
 
+// src/Service/ActivityReminderService.php
+
 namespace App\Service;
 
+use App\Repository\UserRepository;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
-use App\Repository\UserRepository;
-use App\Repository\HourEntryRepository;
-use App\Repository\HolidayRepository;
 
 class ActivityReminderService
 {
     public function __construct(
         private MailerInterface $mailer,
         private UserRepository $userRepository,
-        private HourEntryRepository $hourEntryRepository,
-        private HolidayRepository $holidayRepository
+        private TimeStatsService $timeStatsService
     ) {
     }
 
     public function sendReminders(): void
     {
-        // 1. Récupérer uniquement les utilisateurs actifs (status = 1 dans ta BDD)
+        // On récupère les utilisateurs actifs
         $users = $this->userRepository->findBy(['status' => 1]);
 
-        $today = new \DateTimeImmutable();
+        $endDate = new \DateTimeImmutable();
+        $startDate = $endDate->modify('-7 days');
 
         foreach ($users as $user) {
-            $missingDays = [];
+            // On utilise le nouveau service pour obtenir le détail des manques
+            $missingDays = $this->timeStatsService->getMissingDaysDetail($user, $startDate, $endDate);
 
-            // 2. Vérifier les activités sur les 7 derniers jours
-            for ($i = 1; $i <= 7; $i++) {
-
-                // Weekend ? on passe
-                $dateToCheck = $today->modify("- $i days");
-                if (in_array($dateToCheck->format('N'), [6, 7])) {
-                    continue;
-                }
-
-                // Jour férie ? on passe
-                $isHoliday = $this->holidayRepository->findOneBy(['date' => \DateTime::createFromImmutable($dateToCheck)]);
-                if ($isHoliday) {
-                    continue;
-                }
-
-                $hasEntry = $this->hourEntryRepository->hasEntriesForDate($user, $dateToCheck);
-
-                if (!$hasEntry) {
-                    $missingDays[] = $dateToCheck;
-                }
-            }
-
-            // 3. Envoyer le mail UNIQUEMENT s'il manque des jours
             if (count($missingDays) > 0) {
                 $email = (new TemplatedEmail())
-                    ->from('noreply@devtimer.fr') // À adapter selon ton nom de domaine
+                    ->from('noreply@devtimer.fr')
                     ->to($user->getEmail())
-                    ->subject('Rappel : Saisie de vos activités manquante')
+                    ->subject('🔔 Rappel : Saisie d’activités incomplète')
                     ->htmlTemplate('emails/reminder.html.twig')
                     ->context([
                         'user' => $user,
                         'missing_days' => $missingDays,
+                        'period_start' => $startDate,
+                        'period_end' => $endDate,
                     ]);
 
                 $this->mailer->send($email);
-                sleep(10);
+
+                // Petite pause pour éviter de saturer le serveur SMTP (optionnel selon provider)
+                sleep(30); // 0.5 seconde
             }
         }
     }

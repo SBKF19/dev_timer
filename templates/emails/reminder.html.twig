@@ -1,23 +1,43 @@
 {# templates/emails/reminder.html.twig #}
-<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
-	<h2>Bonjour
-		{{ user.firstname }},</h2>
 
-	<p>
-		<em>(Ceci est un test du nouveau système de relance)</em>
-	</p>
+<h2>Bonjour
+	{{ user.firstname }},</h2>
 
-	<p>Sauf erreur de notre part, il semblerait que vous n'ayez pas saisi vos activités pour les jours suivants :</p>
+<p>
+	Sauf erreur de notre part, il semblerait que votre saisie d'activités soit incomplète pour la période du
+	<strong>{{ period_start|date('d/m/Y') }}</strong>
+	au
+	<strong>{{ period_end|date('d/m/Y') }}</strong>.
+</p>
 
-	<ul>
+<p>Voici le détail des heures manquantes par jour :</p>
+
+<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
+	<thead>
+		<tr style="background-color: #f3f4f6;">
+			<th align="left">Date</th>
+			<th align="center">Attendu</th>
+			<th align="center">Saisi</th>
+			<th align="center">Manquant</th>
+		</tr>
+	</thead>
+	<tbody>
 		{% for day in missing_days %}
-			<li>
-				<strong>{{ day|date('d/m/Y') }}</strong>
-			</li>
+			<tr>
+				<td>{{ day.date|date('d/m/Y') }}</td>
+				<td align="center">{{ day.theorique }}</td>
+				<td align="center">{{ day.saisie }}</td>
+				<td align="center">
+					<strong style="color: #e11d48;">{{ day.hours_missing }}h</strong>
+				</td>
+			</tr>
 		{% endfor %}
-	</ul>
+	</tbody>
+</table>
 
-	<p>Merci de bien vouloir mettre à jour votre espace Dev Timer dès que possible.</p>
+<p style="margin-top: 20px;">
+	Merci de régulariser vos saisies dès que possible sur l'application
+	<strong>Dev Timer</strong>.
+</p>
 
-	<p>Bonne journée !</p>
-</div>
+<p>Bonne journée,<br>L'équipe Administrative</p>

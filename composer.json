@@ -30,7 +30,7 @@
         "symfony/validator": "8.0.*",
         "symfony/webpack-encore-bundle": "^2.4",
         "symfony/yaml": "8.0.*",
-        "symfonycasts/reset-password-bundle": "^1.24"
+        "symfonycasts/reset-password-bundle": "^1.25"
     },
     "config": {
         "allow-plugins": {
@@ -87,7 +87,7 @@
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.3.1",
         "symfony/debug-bundle": "8.0.*",
-        "symfony/maker-bundle": "^1.66",
+        "symfony/maker-bundle": "^1.67",
         "symfony/stopwatch": "8.0.*",
         "symfony/web-profiler-bundle": "8.0.*"
     }

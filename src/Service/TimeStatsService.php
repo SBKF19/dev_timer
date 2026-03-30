@@ -13,7 +13,63 @@ class TimeStatsService
         private HourEntryRepository $hourEntryRepository,
         private ScheduleRepository $scheduleRepository,
         private HolidayRepository $holidayRepository
-    ) {}
+    ) {
+    }
+
+    /**
+     * Retourne la liste des jours où la saisie est incomplète
+     */
+    public function getMissingDaysDetail(User $user, \DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    {
+        $missingDays = [];
+
+        // Optimisation : On récupère tous les jours fériés de la période en une fois
+        $holidays = $this->holidayRepository->findBetweenDates($startDate, $endDate);
+        $holidayDates = array_map(fn($h) => $h->getDate()->format('Y-m-d'), $holidays);
+
+        $period = new \DatePeriod($startDate, new \DateInterval('P1D'), (clone $endDate)->modify('+1 day'));
+
+        foreach ($period as $date) {
+            $dateStr = $date->format('Y-m-d');
+            $dayOfWeek = (int) $date->format('N');
+
+            // Exclusion Week-end (6,7) et Jours fériés
+            if (in_array($dayOfWeek, [6, 7]) || in_array($dateStr, $holidayDates)) {
+                continue;
+            }
+
+            // 1. Théorique pour ce jour précis
+            $theoreticalMinutes = 0;
+            $schedules = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $date);
+            foreach ($schedules as $s) {
+                $diff = $s->getStartTime()->diff($s->getEndTime());
+                $theoreticalMinutes += ($diff->h * 60) + $diff->i;
+            }
+
+            if ($theoreticalMinutes === 0)
+                continue;
+
+            // 2. Réel pour ce jour précis
+            $actualMinutes = 0;
+            $entries = $this->hourEntryRepository->findByUserAndDate($user, $date);
+            foreach ($entries as $entry) {
+                $diff = $entry->getStartDate()->diff($entry->getEndDate());
+                $actualMinutes += ($diff->h * 60) + $diff->i;
+            }
+
+            // 3. Comparaison
+            if ($actualMinutes < $theoreticalMinutes) {
+                $missingDays[] = [
+                    'date' => clone $date,
+                    'hours_missing' => round(($theoreticalMinutes - $actualMinutes) / 60, 2),
+                    'theorique' => $this->formatMinutes($theoreticalMinutes), // Clé renommée
+                    'saisie' => $this->formatMinutes($actualMinutes)         // Clé renommée pour Twig
+                ];
+            }
+        }
+
+        return $missingDays;
+    }
 
     public function getWeeklyStats(User $user, \DateTimeInterface $startDate, \DateTimeInterface $endDate): array
     {
@@ -23,9 +79,9 @@ class TimeStatsService
         // 1. Calcul théorique (Schedules)
         $schedules = $this->scheduleRepository->findAll();
         $period = new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate);
-        
+
         foreach ($period as $date) {
-            $dayOfWeek = (int)$date->format('N');
+            $dayOfWeek = (int) $date->format('N');
 
             if ($this->holidayRepository->findOneBy(['date' => $date])) {
                 continue;
@@ -36,7 +92,7 @@ class TimeStatsService
             foreach ($schedules as $s) {
                 $start = $s->getStartTime();
                 $end = $s->getEndTime();
-                
+
                 if ($start && $end) {
                     $diff = $start->diff($end);
                     $totalTheoreticalMinutes += ($diff->h * 60) + $diff->i;
@@ -81,9 +137,10 @@ class TimeStatsService
         foreach ($users as $user) {
             $period = new \DatePeriod($startDate, new \DateInterval('P1D'), (clone $endDate)->modify('+1 day'));
             foreach ($period as $date) {
-                if ($this->holidayRepository->findOneBy(['date' => $date])) continue;
-                
-                $dayOfWeek = (int)$date->format('N');
+                if ($this->holidayRepository->findOneBy(['date' => $date]))
+                    continue;
+
+                $dayOfWeek = (int) $date->format('N');
                 $schedules = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $date);
 
                 foreach ($schedules as $s) {
@@ -120,11 +177,11 @@ class TimeStatsService
         ];
     }
 
-   public function getChartData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, $projectId = null): array
+    public function getChartData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, $projectId = null): array
     {
         $diff = $startDate->diff($endDate);
         $isMonthlyView = $diff->days > 60;
-        
+
         $labels = [];
         $datasets = [];
 
@@ -137,7 +194,7 @@ class TimeStatsService
                 'stack' => 'stack0'
             ];
         }
-        
+
         $datasets['remaining'] = [
             'label' => 'Non saisies',
             'backgroundColor' => '#f97316',
@@ -150,7 +207,7 @@ class TimeStatsService
 
         foreach ($period as $date) {
             $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
-            
+
             $stepStart = (clone $date)->setTime(0, 0, 0);
             $stepEnd = (clone $date);
             if ($isMonthlyView) {
@@ -189,7 +246,7 @@ class TimeStatsService
                 foreach ($subPeriod as $day) {
                     // On ne compte le théorique que si ce n'est pas un jour férié
                     if (!$this->holidayRepository->findOneBy(['date' => $day])) {
-                        $dayOfWeek = (int)$day->format('N');
+                        $dayOfWeek = (int) $day->format('N');
                         $schedules = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $day);
                         foreach ($schedules as $s) {
                             $diffS = $s->getStartTime()->diff($s->getEndTime());
