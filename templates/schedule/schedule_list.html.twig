@@ -78,18 +78,4 @@
                 </tbody>
             </table>
         </div>
-
-        {% if pagination is defined %}
-            <div class="flex justify-between items-center mt-4 px-4">
-                <div class="text-sm text-gray-500">
-                    Affichage de {{ pagination.getItemNumberPerPage * (pagination.currentPageNumber - 1) + 1 }} 
-                    à {{ min(pagination.getItemNumberPerPage * pagination.currentPageNumber, pagination.totalItemCount) }} 
-                    sur {{ pagination.totalItemCount }} résultats
-                </div>
-                <div class="knp-pagination">
-                    {{ knp_pagination_render(pagination) }}
-                </div>
-            </div>
-        {% endif %}
-    </div>
 {% endblock %}

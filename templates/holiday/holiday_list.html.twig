@@ -3,6 +3,16 @@
 {% block title %}Gestion des jours fériés{% endblock %}
 
 {% block body %}
+
+    {% set yearItems = [] %}
+    {% for year in years %}
+        {% set yearItems = yearItems|merge([{
+            id: year, 
+            value: year, 
+            label: year
+        }]) %}
+    {% endfor %}
+
     <div class="container mx-auto p-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Gestion des jours fériés</h1>
@@ -14,7 +24,38 @@
             } %}
         </div>
 
-        <div class="overflow-x-auto w-full border border-gray-200 rounded-xl shadow-sm">
+        {# SECTION FILTRES #}
+        <div class="card bg-white p-6 shadow-sm border border-gray-100 rounded-2xl mb-8">
+            <div class="flex items-center gap-2 mb-4 text-gray-700">
+                <span class="font-bold uppercase tracking-wider text-xs">Filtres de recherche</span>
+                <hr class="flex-grow border-gray-200">
+            </div>
+            <form method="get" action="{{ path('app_holiday') }}" class="flex flex-wrap md:flex-nowrap items-end gap-4">
+                
+                <div class="flex-grow">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Année',
+                        name: 'year[]',
+                        placeholder: 'Toutes les années',
+                        items: yearItems,
+                        value: current_years|join(','),
+                        multiple: true
+                    }) }}
+                </div>
+                
+                <div class="flex gap-2">
+                    {{ include('composants/button.html.twig', {type: 'filtrer', label: 'Actualiser'}) }}
+                    {{ include('composants/button.html.twig', {
+                            type: 'annuler', 
+                            label: 'Réinitialiser',
+                            href: path('app_holiday'),
+                        }) }}
+                </div>
+            </form>
+        </div>
+
+        {# TABLEAU #}
+        <div class="overflow-x-auto w-full border border-gray-200 rounded-xl shadow-sm bg-white">
             <table class="table w-full text-left border-collapse">
                 <thead class="bg-gray-200">
                     <tr>
@@ -30,7 +71,7 @@
 
                     {% for year, holidays in groupedHolidays %}
                         {% for holiday in holidays %}
-                            <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-none">
+                            <tr class="hover:bg-gray-50 transition-colors {{ loop.last ? 'border-b border-gray-200' : '' }}">
                                 
                                 <td class="text-gray-900 font-medium py-4 px-4">
                                     {{ holiday.date|date('j') }} {{ months[holiday.date|date('n')] }}
@@ -41,7 +82,7 @@
                                 </td>
 
                                 {% if loop.first %}
-                                    <td class="text-gray-900 font-bold py-4 px-4 text-center align-middle border-l border-gray-100" 
+                                    <td class="text-gray-900 font-bold py-4 px-4 text-center align-middle bg-gray-50/30" 
                                         rowspan="{{ holidays|length }}">
                                         {{ year }}
                                     </td>
@@ -61,17 +102,18 @@
                     {% endfor %}
                 </tbody>
             </table>
-
         </div>
-        <div class="flex justify-between items-center mt-4 px-4">
-    <div class="text-sm text-gray-500">
-        Affichage de {{ pagination.getItemNumberPerPage * (pagination.currentPageNumber - 1) + 1 }} 
-        à {{ pagination.getItemNumberPerPage * pagination.currentPageNumber }} 
-        sur {{ pagination.totalItemCount }} résultats
-    </div>
-    <div class="knp-pagination">
-        {{ knp_pagination_render(pagination) }}
-    </div>
-</div>
+
+        {# PAGINATION #}
+        <div class="flex justify-between items-center mt-6 px-4">
+            <div class="text-sm text-gray-500 font-medium">
+                Affichage de {{ pagination.getItemNumberPerPage * (pagination.currentPageNumber - 1) + 1 }} 
+                à {{ pagination.getItemNumberPerPage * pagination.currentPageNumber }} 
+                sur <span class="text-gray-900 font-bold">{{ pagination.totalItemCount }}</span> résultats
+            </div>
+            <div class="navigation">
+                {{ knp_pagination_render(pagination) }}
+            </div>
+        </div>
     </div>
 {% endblock %}

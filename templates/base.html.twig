@@ -3,9 +3,7 @@
     <head>
         <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <meta charset="UTF-8">
-        <title>
-            {% block title %}Welcome!{% endblock %}
-        </title>
+        <title>{% block title %}Welcome!{% endblock %}</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
 
         {% block stylesheets %}
@@ -17,38 +15,33 @@
         {% endblock %}
     </head>
 
-    <body class="bg-white flex">
-        <div class="w-72 sticky top-0 h-screen">
+    <body class="bg-white flex h-screen overflow-hidden m-0">
+        <div class="flex-shrink-0">
             {{ include('composants/sidebar.html.twig', { active_menu: '' }) }}
         </div>
-
-        <main class="flex-1 relative">
+        <main class="flex-1 h-full overflow-y-auto bg-slate-50/30">
+            
+            {# Flash Messages (Fixed pour rester visibles) #}
             <div class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 w-full max-w-sm">
                 {% for label, messages in app.flashes %}
                     {% for message in messages %}
-                        <div x-data="{ show: true }"
-                            x-show="show"
-                            x-init="setTimeout(() => show = false, 5000)"
-                            x-transition:leave="transition ease-in duration-500"
-                            x-transition:leave-start="opacity-100 scale-100"
-                            x-transition:leave-end="opacity-0 scale-90"
-                            role="alert"
-                            class="alert {{ label == 'success' ? 'alert-success' : 'alert-error' }} shadow-xl border-none">
-
+                        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+                            class="alert {{ label == 'success' ? 'alert-success' : 'alert-error' }} shadow-xl border-none font-bold">
                             {% if label == 'success' %}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             {% else %}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             {% endif %}
-                            <span class="text-sm font-bold">{{ message }}</span>
-                            <div class="flex-none">
-                                <button @click="show = false" class="btn btn-sm btn-ghost btn-circle">✕</button>
-                            </div>
+                            <span>{{ message }}</span>
                         </div>
                     {% endfor %}
                 {% endfor %}
             </div>
-        {% block body %}{% endblock %}
+
+            <div class="p-8">
+                {% block body %}{% endblock %}
+            </div>
+            
         </main>
     </body>
 </html>
