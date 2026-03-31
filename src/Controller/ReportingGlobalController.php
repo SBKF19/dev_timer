@@ -13,6 +13,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
 use Symfony\UX\Chartjs\Model\Chart;
 use Knp\Component\Pager\PaginatorInterface;
+use App\Service\ExcelExportService;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 #[Route('/reporting-global', name: 'reporting_global_')]
 class ReportingGlobalController extends AbstractController
@@ -173,5 +175,42 @@ class ReportingGlobalController extends AbstractController
             'activityPieChart' => $activityPieChart,
             'pagination' => $pagination,
         ]);
+    }
+
+    #[Route('/export', name: 'export', methods: ['GET'])]
+    public function export(
+        Request $request,
+        HourEntryRepository $hourEntryRepo,
+        ExcelExportService $excelService
+    ): Response {
+        $today = new \DateTime();
+        $period = $request->query->get('period');
+        
+        $userIds = (array) $request->query->all('user_id') ?: null;
+        $projectIds = (array) $request->query->all('project_id') ?: null;
+
+        if ($period === 'week') {
+            $startDate = (clone $today)->modify('Monday this week')->setTime(0, 0);
+            $endDate = (clone $today)->modify('Sunday this week')->setTime(23, 59, 59);
+        } elseif ($period === 'month') {
+            $startDate = (clone $today)->modify('first day of this month')->setTime(0, 0);
+            $endDate = (clone $today)->modify('last day of this month')->setTime(23, 59, 59);
+        } elseif ($period === 'year') {
+            $startDate = (clone $today)->modify('first day of January this year')->setTime(0, 0);
+            $endDate = (clone $today)->modify('last day of December this year')->setTime(23, 59, 59);
+        } else {
+            $startDateStr = $request->query->get('start_date');
+            $startDate = $startDateStr ? new \DateTime($startDateStr) : (clone $today)->modify('Monday this week')->setTime(0, 0);
+
+            $endDateStr = $request->query->get('end_date');
+            $endDate = $endDateStr ? new \DateTime($endDateStr) : (clone $today)->modify('Sunday this week')->setTime(23, 59, 59);
+        }
+
+        $entries = $hourEntryRepo->getQueryForManagerList($startDate, $endDate, $userIds, $projectIds)->getResult();
+
+        $filePath = $excelService->exportHourEntries($entries);
+
+        $dateString = (new \DateTime())->format('d-m-Y');
+        return $this->file($filePath, "export_reporting_$dateString.xlsx", ResponseHeaderBag::DISPOSITION_ATTACHMENT);
     }
 }

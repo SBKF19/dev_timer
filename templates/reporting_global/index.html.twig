@@ -167,6 +167,12 @@
         Total des saisies trouvées : {{ pagination.getTotalItemCount }}
     </div>
 
+    {{ include('composants/button.html.twig', {
+                        'label': 'Export Excel',
+                        'type': 'confirmer',
+                        'href': path('reporting_global_export', app.request.query.all)
+                    }) }}
+
     {# TABLEAU DES SAISIES #}
     {% set currentSort = pagination.getPaginatorOption('sortField') %}
     {% set currentDir = pagination.getDirection() %}
