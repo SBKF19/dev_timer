@@ -285,6 +285,7 @@ class TimeStatsService
         $totalLabels = count($labels);
       
         $remainingData = array_fill(0, $totalLabels, 0);
+        $singleUser = $isUserView ? (is_array($users) ? reset($users) : $users) : null;
 
         foreach ($period as $index => $date) {
             $stepStart = (clone $date)->setTime(0, 0, 0);
@@ -305,7 +306,7 @@ class TimeStatsService
                 }
 
                 foreach ($globalEntries as $entry) {
-                    if ($entry->getUser() === $user && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
+                    if ($entry->getUser() === $singleUser && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
                         $totalStepSaisiReel += ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
                     }
                 }
