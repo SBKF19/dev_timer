@@ -1,28 +1,120 @@
+
 {% extends 'base.html.twig' %}
 
 {% block title %}Ajouter un horaire{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-white flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl bg-white border border-[#E3E3E3] rounded-xl shadow-sm p-12">
+<div class="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-sm p-12">
 
-        <h1 class="text-[#1F384C] text-2xl font-bold mb-2">Horaires de l'entreprise</h1>
-        <h2 class="text-[#000000] text-lg font-semibold mb-10">Ajout des horaires</h2>
+        <header class="mb-10">
+            <h1 class="text-slate-900 text-2xl font-bold mb-2">Horaires de l'entreprise</h1>
+            <h2 class="text-slate-500 text-lg font-semibold">Ajout des horaires</h2>
+        </header>
 
         {{ form_start(ScheduleFormType, { attr: { id: 'schedule_form_add'} }) }}
-            {{ include("form/form_schedule.html.twig") }}
-        {{ form_end(ScheduleFormType) }}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+                
+                <div class="form-control">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Jour de la semaine',
+                        name: ScheduleFormType.dayOfWeek.vars.full_name,
+                        id: ScheduleFormType.dayOfWeek.vars.id,
+                        multiple: false,
+                        placeholder: 'Choisir un jour...',
+                        items: [
+                            {'id': 1, 'label': 'Lundi'},
+                            {'id': 2, 'label': 'Mardi'},
+                            {'id': 3, 'label': 'Mercredi'},
+                            {'id': 4, 'label': 'Jeudi'},
+                            {'id': 5, 'label': 'Vendredi'},
+                            {'id': 6, 'label': 'Samedi'},
+                            {'id': 7, 'label': 'Dimanche'}
+                        ],
+                        value: ScheduleFormType.dayOfWeek.vars.value
+                    }) }}
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.dayOfWeek) }}</div>
+                </div>
 
-        <div class="flex flex-row justify-between items-center mt-12 gap-6">
-            <a href="{{ path('app_schedule') }}"
-               class="btn border-none bg-[#B4B4B4] hover:bg-gray-400 text-white flex-1 h-12 rounded-xl normal-case text-base font-medium shadow-none flex items-center justify-center">
-                Retour
-            </a>
+                <div class="form-control">
+                    {{ include('composants/select_multi.html.twig', {
+                        label: 'Période',
+                        name: ScheduleFormType.period.vars.full_name,
+                        id: ScheduleFormType.period.vars.id,
+                        multiple: false,
+                        placeholder: 'Sélectionner la période...',
+                        items: [
+                            {'id': 'Matin', 'label': 'Matin'},
+                            {'id': 'Après-midi', 'label': 'Après-midi'}
+                        ],
+                        value: ScheduleFormType.period.vars.value
+                    }) }}
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.period) }}</div>
+                </div>
 
-            <button type="submit" form="schedule_form_add"
-                    class="btn border-none bg-[#2A7DE3] hover:bg-[#18355F] text-white flex-1 h-12 rounded-xl normal-case text-base font-medium">
-                Ajouter
-            </button>
+                <div class="form-control">
+                    <label class="mb-1 text-[15px] font-normal text-gray-500">
+                        Heure de début {% if ScheduleFormType.startTime.vars.required %}<span class="font-light">- champ obligatoire</span>{% endif %}
+                    </label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 z-10 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        {{ form_widget(ScheduleFormType.startTime, {
+                            'attr': {
+                                'class': 'block w-full h-12 pl-12 pr-4 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            }
+                        }) }}
+                    </div>
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.startTime) }}</div>
+                </div>
+
+                <div class="form-control">
+                    <label class="mb-1 text-[15px] font-normal text-gray-500">
+                        Heure de fin {% if ScheduleFormType.endTime.vars.required %}<span class="font-light">- champ obligatoire</span>{% endif %}
+                    </label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 z-10 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        {{ form_widget(ScheduleFormType.endTime, {
+                            'attr': {
+                                'class': 'block w-full h-12 pl-12 pr-4 border border-black rounded-xl bg-white text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            }
+                        }) }}
+                    </div>
+                    <div class="text-red-500 text-sm mt-2">{{ form_errors(ScheduleFormType.endTime) }}</div>
+                </div>
+
+            </div>
+            {{ form_widget(ScheduleFormType._token) }}
+        {{ form_end(ScheduleFormType, {'render_rest': false}) }}
+
+        <div class="flex flex-row items-stretch mt-12 gap-6">
+            <div class="flex-1">
+                {{ include('composants/button.html.twig', {
+                    href: path('app_schedule'),
+                    label: 'Retour',
+                    type: 'annuler',
+                    class: 'w-full h-12 flex items-center justify-center'
+                }) }}
+            </div>
+
+            <div class="flex-1">
+                {{ include('composants/button.html.twig', {
+                    label: 'Ajouter',
+                    type: 'confirmer',
+                    class: 'w-full h-12',
+                    attr: { 
+                        'form': 'schedule_form_add',
+                        'type': 'confirmer'
+                    }
+                }) }}
+            </div>
         </div>
 
     </div>

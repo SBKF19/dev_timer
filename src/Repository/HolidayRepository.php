@@ -16,7 +16,18 @@ class HolidayRepository extends ServiceEntityRepository
         parent::__construct($registry, Holiday::class);
     }
 
-//    /**
+    public function findBetweenDates(\DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        return $this->createQueryBuilder('h')
+            ->andWhere('h.date >= :start')
+            ->andWhere('h.date <= :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getResult();
+    }
+
+    //    /**
 //     * @return Holiday[] Returns an array of Holiday objects
 //     */
 //    public function findByExampleField($value): array
@@ -31,7 +42,7 @@ class HolidayRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-//    public function findOneBySomeField($value): ?Holiday
+    //    public function findOneBySomeField($value): ?Holiday
 //    {
 //        return $this->createQueryBuilder('h')
 //            ->andWhere('h.exampleField = :val')

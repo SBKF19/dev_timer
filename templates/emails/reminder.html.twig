@@ -1,0 +1,43 @@
+{# templates/emails/reminder.html.twig #}
+
+<h2>Bonjour
+	{{ user.firstname }},</h2>
+
+<p>
+	Sauf erreur de notre part, il semblerait que votre saisie d'activités soit incomplète pour la période du
+	<strong>{{ period_start|date('d/m/Y') }}</strong>
+	au
+	<strong>{{ period_end|date('d/m/Y') }}</strong>.
+</p>
+
+<p>Voici le détail des heures manquantes par jour :</p>
+
+<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
+	<thead>
+		<tr style="background-color: #f3f4f6;">
+			<th align="left">Date</th>
+			<th align="center">Attendu</th>
+			<th align="center">Saisi</th>
+			<th align="center">Manquant</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for day in missing_days %}
+			<tr>
+				<td>{{ day.date|date('d/m/Y') }}</td>
+				<td align="center">{{ day.theorique }}</td>
+				<td align="center">{{ day.saisie }}</td>
+				<td align="center">
+					<strong style="color: #e11d48;">{{ day.hours_missing }}h</strong>
+				</td>
+			</tr>
+		{% endfor %}
+	</tbody>
+</table>
+
+<p style="margin-top: 20px;">
+	Merci de régulariser vos saisies dès que possible sur l'application
+	<strong>Dev Timer</strong>.
+</p>
+
+<p>Bonne journée,<br>L'équipe Administrative</p>

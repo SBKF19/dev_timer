@@ -20,7 +20,7 @@
 			<div class="text-xs font-semibold text-gray-400 uppercase px-4 mb-2">Administration</div>
 			{{ _self.nav_item(path('user_list'), 'Gestion des comptes', 'gestion.png') }}
 			{{ _self.nav_item(path('app_schedule'), 'Horaires', 'horraire.png') }}
-			{{ _self.nav_item('test', 'Rappel email', 'rappel.png') }}
+			{{ _self.nav_item(path('app_reminder_index'), 'Rappel email', 'rappel.png') }}
 			{{ _self.nav_item('test', 'Jours fériés', 'jourferie.png') }}
 			{{ _self.nav_item('test', 'Corrections', 'correction.png') }}
 		{% endif %}
