@@ -1,3 +1,6 @@
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
+
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
     if (!calendarEl) return;
@@ -20,6 +23,22 @@ document.addEventListener('DOMContentLoaded', function() {
         selectConstraint: 'businessHours',
         selectable: true,
         events: settings.eventsUrl,
+
+        events: settings.eventsUrl,
+
+        eventDidMount: function(info) {
+            const comm = info.event.extendedProps.commentary;
+            if (comm && comm.trim() !== "") {
+                tippy(info.el, {
+                    content: comm,
+                    placement: 'top',
+                    appendTo: () => document.body,
+                    onShow(instance) {
+                        instance.popper.querySelector('.tippy-box').classList.add('bg-neutral', 'text-neutral-content', 'rounded-lg', 'shadow-lg', 'p-2', 'text-sm');
+                    }
+                });
+            }
+        },
 
         selectOverlap: (event) => !event.id.startsWith('holiday_'),
         

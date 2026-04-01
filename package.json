@@ -2,6 +2,7 @@
   "dependencies": {
     "node": "^25.7.0",
     "postcss-loader": "^8.2.1",
+    "tippy.js": "^6.3.7",
     "tailwindcss": "^4.2.2"
   },
   "devDependencies": {

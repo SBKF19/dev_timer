@@ -261,18 +261,29 @@ class TimeStatsService
         if (!empty($projectIds)) {
             $qb->andWhere('h.project IN (:p)')->setParameter('p', $projectIds);
         }
-        
-        $allEntries = $qb->getQuery()->getResult();
+        $filteredEntries = $qb->getQuery()->getResult();
+
+        $qbGlobal = $this->hourEntryRepository->createQueryBuilder('h')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
+        $globalEntries = $qbGlobal->getQuery()->getResult();
+
         $holidayMap = $this->getHolidayMap();
+        $scheduleCache = [];
         $isMonthlyView = $startDate->diff($endDate)->days > 60;
         $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
         $period = new \DatePeriod($startDate, $interval, $endDate, \DatePeriod::INCLUDE_END_DATE);
 
         $labels = [];
+        $datasets = [];
+        $remainingData = [];
         foreach ($period as $date) { $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m'); }
         $totalLabels = count($labels);
-
-        $datasets = []; 
+      
         $remainingData = array_fill(0, $totalLabels, 0);
 
         foreach ($period as $index => $date) {
@@ -280,7 +291,7 @@ class TimeStatsService
             $stepEnd = $isMonthlyView ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) : (clone $date)->setTime(23, 59, 59);
 
             $totalStepTheorique = 0;
-            $totalStepSaisi = 0;
+            $totalStepSaisiReel = 0;
 
             if (count($users) === 1) {
                 $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), $stepEnd, \DatePeriod::INCLUDE_END_DATE);
@@ -292,36 +303,54 @@ class TimeStatsService
                         }
                     }
                 }
+
+                foreach ($globalEntries as $entry) {
+                    if ($entry->getUser() === $user && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
+                        $totalStepSaisiReel += ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+                    }
+                }
             }
 
-            foreach ($allEntries as $entry) {
+            foreach ($filteredEntries as $entry) {
                 if ($entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
-                    $mins = ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
-                    $totalStepSaisi += $mins;
                     $act = $entry->getActivity();
-                    if (!isset($datasets[$act->getId()])) {
-                        $datasets[$act->getId()] = [
+                    $actId = $act->getId();
+                    $mins = ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+
+                    if (!isset($datasets[$actId])) {
+                        $datasets[$actId] = [
                             'label' => $act->getLabel(),
                             'backgroundColor' => $act->getColor() ?? '#94a3b8',
-                            'data' => array_fill(0, $totalLabels, 0),
+                            'data' => array_fill(0, count($labels) - 1, 0),
                             'stack' => 'stack0'
                         ];
                     }
-                    $datasets[$act->getId()]['data'][$index] += round($mins / 60, 2);
+                    
+                    if (!isset($datasets[$actId]['data'][count($labels) - 1])) {
+                        $datasets[$actId]['data'][count($labels) - 1] = 0;
+                    }
+                    $datasets[$actId]['data'][count($labels) - 1] += round($mins / 60, 2);
                 }
             }
-            $remainingData[$index] = round(max(0, ($totalStepTheorique - $totalStepSaisi) / 60), 2);
+
+            $remaining = max(0, ($totalStepTheorique - $totalStepSaisiReel) / 60);
+            $remainingData[] = round($remaining, 2);
+
+            foreach ($datasets as &$ds) {
+                if (count($ds['data']) < count($labels)) {
+                    $ds['data'][] = 0;
+                }
+            }
         }
 
         $finalDatasets = array_values($datasets);
-        if (count($users) === 1) {
-            $finalDatasets[] = [
-                'label' => 'Heures manquantes',
-                'backgroundColor' => '#f97316',
-                'data' => $remainingData,
-                'stack' => 'stack0'
-            ];
-        }
+        
+        $finalDatasets[] = [
+            'label' => 'Heures manquantes',
+            'backgroundColor' => '#f97316',
+            'data' => $remainingData,
+            'stack' => 'stack0'
+        ];
 
         return ['labels' => $labels, 'datasets' => $finalDatasets];
     }
