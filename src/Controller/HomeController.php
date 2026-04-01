@@ -56,7 +56,7 @@ class HomeController extends AbstractController
         $projectChart->setOptions($this->getDefaultOptions('Heures par projet'));
 
         // Graphique par Activité
-        $activityRawData = $timeStatsService->getActivityChartRawData($this->getUser(), $startDate, $endDate);
+        $activityRawData = $timeStatsService->getActivityChartRawData2($this->getUser(), $startDate, $endDate);
         $activityChart = $chartBuilder->createChart(Chart::TYPE_BAR);
         $activityChart->setData([
             'labels' => $activityRawData['labels'],

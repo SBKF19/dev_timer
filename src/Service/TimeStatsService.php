@@ -248,15 +248,21 @@ class TimeStatsService
     /**
      * Fonction pour le graphique : Répartit le temps de travail cumulé en fonction des activités (Compatible User ou Array)
      */
-    public function getActivityChartRawData(User|array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    public function getActivityChartRawData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
     {
-        $isUserView = $users instanceof User;
-        if ($isUserView) $users = [$users];
+        $diff = $startDate->diff($endDate);
+        $isMonthlyView = $diff->days > 60;
 
         $qb = $this->hourEntryRepository->createQueryBuilder('h')
-            ->select('h', 'a')->join('h.activity', 'a')
-            ->where('h.user IN (:users) AND h.startDate >= :start AND h.endDate <= :end')
-            ->setParameter('users', $users)->setParameter('start', $startDate)->setParameter('end', $endDate);
+            ->select('h', 'a', 'u')
+            ->join('h.activity', 'a')
+            ->join('h.user', 'u')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
 
         if (!empty($projectIds)) {
             $qb->andWhere('h.project IN (:p)')->setParameter('p', $projectIds);
@@ -274,31 +280,30 @@ class TimeStatsService
 
         $holidayMap = $this->getHolidayMap();
         $scheduleCache = [];
-        $isMonthlyView = $startDate->diff($endDate)->days > 60;
         $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
-        $period = new \DatePeriod($startDate, $interval, $endDate, \DatePeriod::INCLUDE_END_DATE);
+        $period = new \DatePeriod($startDate, $interval, (clone $endDate)->modify('+1 day'));
 
         $labels = [];
         $datasets = [];
         $remainingData = [];
-        foreach ($period as $date) { $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m'); }
-        $totalLabels = count($labels);
-      
-        $remainingData = array_fill(0, $totalLabels, 0);
 
-        foreach ($period as $index => $date) {
+        foreach ($period as $date) {
+            $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
             $stepStart = (clone $date)->setTime(0, 0, 0);
             $stepEnd = $isMonthlyView ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) : (clone $date)->setTime(23, 59, 59);
 
             $totalStepTheorique = 0;
             $totalStepSaisiReel = 0;
 
-            if (count($users) === 1) {
-                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), $stepEnd, \DatePeriod::INCLUDE_END_DATE);
+            foreach ($users as $user) {
+                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), (clone $stepEnd)->modify('+1 second'));
                 foreach ($subPeriod as $day) {
-                    if (!isset($holidayMap[$day->format('Y-m-d')])) {
-                        $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
-                        foreach ($schedules as $s) {
+                    $dayStr = $day->format('Y-m-d');
+                    if (!isset($holidayMap[$dayStr])) {
+                        if (!isset($scheduleCache[$dayStr])) {
+                            $scheduleCache[$dayStr] = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
+                        }
+                        foreach ($scheduleCache[$dayStr] as $s) {
                             $totalStepTheorique += ($s->getStartTime()->diff($s->getEndTime())->h * 60) + $s->getStartTime()->diff($s->getEndTime())->i;
                         }
                     }
@@ -354,6 +359,209 @@ class TimeStatsService
 
         return ['labels' => $labels, 'datasets' => $finalDatasets];
     }
+
+    public function getActivityChartRawData2(User|array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
+    {
+        $isUserView = $users instanceof User;
+        if ($isUserView) $users = [$users];
+
+        $qb = $this->hourEntryRepository->createQueryBuilder('h')
+            ->select('h', 'a')->join('h.activity', 'a')
+            ->where('h.user IN (:users) AND h.startDate >= :start AND h.endDate <= :end')
+            ->setParameter('users', $users)->setParameter('start', $startDate)->setParameter('end', $endDate);
+
+        if (!empty($projectIds)) {
+            $qb->andWhere('h.project IN (:p)')->setParameter('p', $projectIds);
+        }
+        $filteredEntries = $qb->getQuery()->getResult();
+
+        $qbGlobal = $this->hourEntryRepository->createQueryBuilder('h')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
+        $globalEntries = $qbGlobal->getQuery()->getResult();
+
+        $holidayMap = $this->getHolidayMap();
+        $scheduleCache = [];
+        $isMonthlyView = $startDate->diff($endDate)->days > 60;
+        $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
+        $period = new \DatePeriod($startDate, $interval, $endDate, \DatePeriod::INCLUDE_END_DATE);
+
+        $labels = [];
+        $datasets = [];
+        $remainingData = [];
+        foreach ($period as $date) { $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m'); }
+        $totalLabels = count($labels);
+      
+        $remainingData = array_fill(0, $totalLabels, 0);
+        $singleUser = $isUserView ? (is_array($users) ? reset($users) : $users) : null;
+
+        foreach ($period as $index => $date) {
+            $stepStart = (clone $date)->setTime(0, 0, 0);
+            $stepEnd = $isMonthlyView ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) : (clone $date)->setTime(23, 59, 59);
+
+            $totalStepTheorique = 0;
+            $totalStepSaisiReel = 0;
+
+            if (count($users) === 1) {
+                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), $stepEnd, \DatePeriod::INCLUDE_END_DATE);
+                foreach ($subPeriod as $day) {
+                    if (!isset($holidayMap[$day->format('Y-m-d')])) {
+                        $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
+                        foreach ($schedules as $s) {
+                            $totalStepTheorique += ($s->getStartTime()->diff($s->getEndTime())->h * 60) + $s->getStartTime()->diff($s->getEndTime())->i;
+                        }
+                    }
+                }
+
+                foreach ($globalEntries as $entry) {
+                    if ($entry->getUser() === $singleUser && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
+                        $totalStepSaisiReel += ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+                    }
+                }
+            }
+
+            foreach ($filteredEntries as $entry) {
+                if ($entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
+                    $act = $entry->getActivity();
+                    $actId = $act->getId();
+                    $mins = ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+
+                    if (!isset($datasets[$actId])) {
+                        $datasets[$actId] = [
+                            'label' => $act->getLabel(),
+                            'backgroundColor' => $act->getColor() ?? '#94a3b8',
+                            'data' => array_fill(0, count($labels) - 1, 0),
+                            'stack' => 'stack0'
+                        ];
+                    }
+                    
+                    if (!isset($datasets[$actId]['data'][count($labels) - 1])) {
+                        $datasets[$actId]['data'][count($labels) - 1] = 0;
+                    }
+                    $datasets[$actId]['data'][count($labels) - 1] += round($mins / 60, 2);
+                }
+            }
+
+            $remaining = max(0, ($totalStepTheorique - $totalStepSaisiReel) / 60);
+            $remainingData[] = round($remaining, 2);
+
+            foreach ($datasets as &$ds) {
+                if (count($ds['data']) < count($labels)) {
+                    $ds['data'][] = 0;
+                }
+            }
+        }
+
+        $finalDatasets = array_values($datasets);
+        
+        $finalDatasets[] = [
+            'label' => 'Heures manquantes',
+            'backgroundColor' => '#f97316',
+            'data' => $remainingData,
+            'stack' => 'stack0'
+        ];
+
+        return ['labels' => $labels, 'datasets' => $finalDatasets];
+    }
+
+    public function getChartData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, $projectId = null): array
+    {
+        $diff = $startDate->diff($endDate);
+        $isMonthlyView = $diff->days > 60;
+        
+        $labels = [];
+        $datasets = [];
+
+        foreach ($users as $user) {
+            $datasets[$user->getId()] = [
+                'label' => $user->getFirstname(),
+                'backgroundColor' => $user->getColor() ?? '#36a2eb',
+                'data' => [],
+                'stack' => 'stack0'
+            ];
+        }
+        
+        $datasets['remaining'] = [
+            'label' => 'Non saisies',
+            'backgroundColor' => '#f97316',
+            'data' => [],
+            'stack' => 'stack0'
+        ];
+
+        $qb = $this->hourEntryRepository->createQueryBuilder('h')
+            ->where('h.user IN (:users)')
+            ->andWhere('h.startDate >= :start')
+            ->andWhere('h.endDate <= :end')
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
+
+        if ($projectId) {
+            $qb->andWhere('h.project = :p')->setParameter('p', $projectId);
+        }
+        $allEntries = $qb->getQuery()->getResult();
+
+        $holidayMap = $this->getHolidayMap();
+        $scheduleCache = []; 
+
+        $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
+        $period = new \DatePeriod($startDate, $interval, (clone $endDate)->modify('+1 day'));
+
+        foreach ($period as $date) {
+            $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
+            
+            $stepStart = (clone $date)->setTime(0, 0, 0);
+            $stepEnd = (clone $date);
+            if ($isMonthlyView) {
+                $stepEnd->modify('last day of this month')->setTime(23, 59, 59);
+            } else {
+                $stepEnd->setTime(23, 59, 59);
+            }
+
+            $totalStepTheorique = 0;
+            $totalStepSaisi = 0;
+
+            foreach ($users as $user) {
+                $userMinutes = 0;
+                foreach ($allEntries as $entry) {
+                    if ($entry->getUser() === $user && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
+                        $d = $entry->getStartDate()->diff($entry->getEndDate());
+                        $userMinutes += ($d->h * 60) + $d->i;
+                    }
+                }
+                $datasets[$user->getId()]['data'][] = round($userMinutes / 60, 2);
+                $totalStepSaisi += $userMinutes;
+
+                $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), (clone $stepEnd)->modify('+1 second'));
+                foreach ($subPeriod as $day) {
+                    $dayStr = $day->format('Y-m-d');
+                    if (!isset($holidayMap[$dayStr])) {
+                        if (!isset($scheduleCache[$dayStr])) {
+                            $dayOfWeek = (int)$day->format('N');
+                            $scheduleCache[$dayStr] = $this->scheduleRepository->findActiveSchedulesByDay($dayOfWeek, $day);
+                        }
+                        foreach ($scheduleCache[$dayStr] as $s) {
+                            $diffS = $s->getStartTime()->diff($s->getEndTime());
+                            $totalStepTheorique += ($diffS->h * 60) + $diffS->i;
+                        }
+                    }
+                }
+            }
+
+            $remaining = max(0, ($totalStepTheorique - $totalStepSaisi) / 60);
+            $datasets['remaining']['data'][] = round($remaining, 2);
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => array_values($datasets)
+        ];
+    }
+
 
     /**
      * Fonction pour le graphique : Compare le temps passé spécifiquement sur des tâches de développement entre les utilisateurs
