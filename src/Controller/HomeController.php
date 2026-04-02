@@ -22,32 +22,37 @@ class HomeController extends AbstractController
     ): Response {
         $today = new \DateTime();
         $period = $request->query->get('period');
+        $startDateStr = $request->query->get('start_date');
+        $endDateStr = $request->query->get('end_date');
 
-        // --- 1. GESTION DES DATES (Calculées avant tout le reste) ---
-        if ($period === 'week') {
+        // --- 1. GESTION DES DATES ---
+        if ($startDateStr || $endDateStr) {
+            // Si des dates sont saisies manuellement dans le formulaire
+            $startDate = $startDateStr ? new \DateTime($startDateStr) : (clone $today)->modify('first day of this month');
+            $endDate = $endDateStr ? new \DateTime($endDateStr) : (clone $today)->modify('last day of this month');
+            $period = 'custom'; 
+        } elseif ($period === 'week') {
             $startDate = (clone $today)->modify('Monday this week')->setTime(0, 0, 0);
             $endDate = (clone $today)->modify('Sunday this week')->setTime(23, 59, 59);
-        } elseif ($period === 'month') {
-            $startDate = (clone $today)->modify('first day of this month')->setTime(0, 0, 0);
-            $endDate = (clone $today)->modify('last day of this month')->setTime(23, 59, 59);
         } elseif ($period === 'year') {
             $startDate = (clone $today)->modify('first day of January this year')->setTime(0, 0, 0);
             $endDate = (clone $today)->modify('last day of December this year')->setTime(23, 59, 59);
         } else {
-            // Récupération depuis le formulaire (Filtre personnalisé)
-            $startDateStr = $request->query->get('start_date');
-            $endDateStr = $request->query->get('end_date');
-            
-            // Si pas de dates saisies, on met par défaut la semaine en cours
-            $startDate = $startDateStr ? new \DateTime($startDateStr) : (clone $today)->modify('Monday this week')->setTime(0, 0, 0);
-            $endDate = $endDateStr ? new \DateTime($endDateStr) : (clone $today)->modify('Sunday this week')->setTime(23, 59, 59);
+        
+        // Récupération depuis le formulaire (Filtre personnalisé)
+        // Si pas de dates saisies, on met par défaut la semaine en cours
+
+            $startDate = (clone $today)->modify('first day of this month')->setTime(0, 0, 0);
+            $endDate = (clone $today)->modify('last day of this month')->setTime(23, 59, 59);
+            $period = $period ?: 'month';
         }
 
         // Sécurité : on force l'heure de fin à la dernière seconde de la journée
         $endDate->setTime(23, 59, 59);
         
         // Graphique par Projet
-        $projectRawData = $timeStatsService->getProjectChartRawData($this->getUser(), $startDate, $endDate);
+        // On passe un tableau [$this->getUser()] pour la compatibilité avec le service
+        $projectRawData = $timeStatsService->getProjectChartRawData([$this->getUser()], $startDate, $endDate);
         $projectChart = $chartBuilder->createChart(Chart::TYPE_BAR);
         $projectChart->setData([
             'labels' => $projectRawData['labels'],
@@ -56,7 +61,8 @@ class HomeController extends AbstractController
         $projectChart->setOptions($this->getDefaultOptions('Heures par projet'));
 
         // Graphique par Activité
-        $activityRawData = $timeStatsService->getActivityChartRawData2($this->getUser(), $startDate, $endDate);
+        // On passe un tableau [$this->getUser()] pour la compatibilité avec le service
+        $activityRawData = $timeStatsService->getActivityChartRawData2([$this->getUser()], $startDate, $endDate);
         $activityChart = $chartBuilder->createChart(Chart::TYPE_BAR);
         $activityChart->setData([
             'labels' => $activityRawData['labels'],

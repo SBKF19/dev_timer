@@ -363,18 +363,24 @@ class TimeStatsService
     public function getActivityChartRawData2(User|array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, ?array $projectIds = null): array
     {
         $isUserView = $users instanceof User;
-        if ($isUserView) $users = [$users];
+        if ($isUserView) {
+            $users = [$users];
+        }
 
+        // 1. Récupération des saisies filtrées (Activités spécifiques)
         $qb = $this->hourEntryRepository->createQueryBuilder('h')
             ->select('h', 'a')->join('h.activity', 'a')
             ->where('h.user IN (:users) AND h.startDate >= :start AND h.endDate <= :end')
-            ->setParameter('users', $users)->setParameter('start', $startDate)->setParameter('end', $endDate);
+            ->setParameter('users', $users)
+            ->setParameter('start', $startDate)
+            ->setParameter('end', $endDate);
 
         if (!empty($projectIds)) {
             $qb->andWhere('h.project IN (:p)')->setParameter('p', $projectIds);
         }
         $filteredEntries = $qb->getQuery()->getResult();
 
+        // 2. Récupération de TOUTES les saisies de l'utilisateur (pour calculer le restant réel)
         $qbGlobal = $this->hourEntryRepository->createQueryBuilder('h')
             ->where('h.user IN (:users)')
             ->andWhere('h.startDate >= :start')
@@ -384,89 +390,96 @@ class TimeStatsService
             ->setParameter('end', $endDate);
         $globalEntries = $qbGlobal->getQuery()->getResult();
 
+        // 3. Préparation des périodes et labels
         $holidayMap = $this->getHolidayMap();
-        $scheduleCache = [];
         $isMonthlyView = $startDate->diff($endDate)->days > 60;
         $interval = $isMonthlyView ? new \DateInterval('P1M') : new \DateInterval('P1D');
         $period = new \DatePeriod($startDate, $interval, $endDate, \DatePeriod::INCLUDE_END_DATE);
 
         $labels = [];
-        $datasets = [];
-        $remainingData = [];
-        foreach ($period as $date) { $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m'); }
+        foreach ($period as $date) {
+            $labels[] = $date->format($isMonthlyView ? 'M Y' : 'd/m');
+        }
         $totalLabels = count($labels);
-      
-        $remainingData = array_fill(0, $totalLabels, 0);
-        $singleUser = $isUserView ? (is_array($users) ? reset($users) : $users) : null;
 
+        $datasets = [];
+        $remainingData = array_fill(0, $totalLabels, 0);
+        $singleUser = count($users) === 1 ? reset($users) : null;
+
+        // 4. Boucle principale par étape (Jour ou Mois)
         foreach ($period as $index => $date) {
             $stepStart = (clone $date)->setTime(0, 0, 0);
-            $stepEnd = $isMonthlyView ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) : (clone $date)->setTime(23, 59, 59);
+            $stepEnd = $isMonthlyView 
+                ? (clone $date)->modify('last day of this month')->setTime(23, 59, 59) 
+                : (clone $date)->setTime(23, 59, 59);
 
             $totalStepTheorique = 0;
             $totalStepSaisiReel = 0;
 
-            if (count($users) === 1) {
+            // Calcul du théorique vs réel (Uniquement si vue mono-utilisateur)
+            if ($singleUser) {
                 $subPeriod = new \DatePeriod($stepStart, new \DateInterval('P1D'), $stepEnd, \DatePeriod::INCLUDE_END_DATE);
                 foreach ($subPeriod as $day) {
                     if (!isset($holidayMap[$day->format('Y-m-d')])) {
                         $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$day->format('N'), $day);
                         foreach ($schedules as $s) {
-                            $totalStepTheorique += ($s->getStartTime()->diff($s->getEndTime())->h * 60) + $s->getStartTime()->diff($s->getEndTime())->i;
+                            $diff = $s->getStartTime()->diff($s->getEndTime());
+                            $totalStepTheorique += ($diff->h * 60) + $diff->i;
                         }
                     }
                 }
 
                 foreach ($globalEntries as $entry) {
-                    if ($entry->getUser() === $singleUser && $entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
-                        $totalStepSaisiReel += ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+                    if ($entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
+                        $diff = $entry->getStartDate()->diff($entry->getEndDate());
+                        $totalStepSaisiReel += ($diff->h * 60) + $diff->i;
                     }
                 }
             }
 
+            // Remplissage des datasets par activité
             foreach ($filteredEntries as $entry) {
                 if ($entry->getStartDate() >= $stepStart && $entry->getStartDate() <= $stepEnd) {
                     $act = $entry->getActivity();
+                    if (!$act) continue;
+
                     $actId = $act->getId();
-                    $mins = ($entry->getStartDate()->diff($entry->getEndDate())->h * 60) + $entry->getStartDate()->diff($entry->getEndDate())->i;
+                    $diff = $entry->getStartDate()->diff($entry->getEndDate());
+                    $mins = ($diff->h * 60) + $diff->i;
 
                     if (!isset($datasets[$actId])) {
                         $datasets[$actId] = [
                             'label' => $act->getLabel(),
                             'backgroundColor' => $act->getColor() ?? '#94a3b8',
-                            'data' => array_fill(0, count($labels) - 1, 0),
+                            'data' => array_fill(0, $totalLabels, 0),
                             'stack' => 'stack0'
                         ];
                     }
-                    
-                    if (!isset($datasets[$actId]['data'][count($labels) - 1])) {
-                        $datasets[$actId]['data'][count($labels) - 1] = 0;
-                    }
-                    $datasets[$actId]['data'][count($labels) - 1] += round($mins / 60, 2);
+                    $datasets[$actId]['data'][$index] += round($mins / 60, 2);
                 }
             }
 
+            // Calcul des heures manquantes pour cet index
             $remaining = max(0, ($totalStepTheorique - $totalStepSaisiReel) / 60);
-            $remainingData[] = round($remaining, 2);
-
-            foreach ($datasets as &$ds) {
-                if (count($ds['data']) < count($labels)) {
-                    $ds['data'][] = 0;
-                }
-            }
+            $remainingData[$index] = round($remaining, 2);
         }
 
+        // 5. Assemblage final
         $finalDatasets = array_values($datasets);
         
         $finalDatasets[] = [
             'label' => 'Heures manquantes',
-            'backgroundColor' => '#f97316',
+            'backgroundColor' => '#f97316', // Orange
             'data' => $remainingData,
             'stack' => 'stack0'
         ];
 
-        return ['labels' => $labels, 'datasets' => $finalDatasets];
-    }
+        return [
+            'labels' => $labels,
+            'datasets' => $finalDatasets
+        ];
+    } 
+
 
     public function getChartData(array $users, \DateTimeInterface $startDate, \DateTimeInterface $endDate, $projectId = null): array
     {
