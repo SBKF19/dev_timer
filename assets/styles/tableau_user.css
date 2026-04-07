@@ -1,0 +1,9 @@
+.user-table-compact td, 
+.user-table-compact th {
+    padding: 0.5rem 0.25rem !important;
+    white-space: nowrap;
+}
+.user-table-compact .break-cell {
+    white-space: normal !important;
+    word-break: break-all;
+}

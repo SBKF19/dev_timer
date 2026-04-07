@@ -12,3 +12,4 @@ import './styles/app.css';
 import './styles/calendar.css';
 import './js/calendar-init.js';
 import './js/table-scroll.js';
+import './styles/tableau_user.css';

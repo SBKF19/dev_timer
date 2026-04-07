@@ -64,6 +64,31 @@ class UserRepository extends ServiceEntityRepository
         }
     }
 
+    public function getQueryForUserList(array $filters): \Doctrine\ORM\Query
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->leftJoin('u.role', 'r')
+            ->addSelect('r')
+            ->andWhere('u.deleted_at IS NULL');
+
+        if (!empty($filters['search'])) {
+            $qb->andWhere('u.firstname LIKE :search OR u.lastname LIKE :search OR u.email LIKE :search')
+            ->setParameter('search', '%' . $filters['search'] . '%');
+        }
+
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $qb->andWhere('u.status = :status')
+            ->setParameter('status', $filters['status']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $qb->andWhere('u.id = :userId')
+            ->setParameter('userId', $filters['user_id']);
+        }
+
+        return $qb->getQuery();
+    }
+
     //    /**
     //     * @return User[] Returns an array of User objects
     //     */

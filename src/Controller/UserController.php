@@ -10,12 +10,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Repository\UserRepository;
+use Knp\Component\Pager\PaginatorInterface;
 
 #[Route('/user', name: 'user_')]
 class UserController extends AbstractController
 {
     #[Route('/', name: 'list')]
-    public function list(UserRepository $userRepository, Request $request): Response
+    public function list(UserRepository $userRepository, Request $request, PaginatorInterface $paginator): Response
     {
         $filters = [
             'search' => $request->query->get('search'),
@@ -23,22 +24,23 @@ class UserController extends AbstractController
             'user_id' => $request->query->get('user_id'),
         ];
 
-        $sort = $request->query->get('sort', 'lastname');
-        $direction = $request->query->get('direction', 'ASC');
+        $query = $userRepository->getQueryForUserList($filters);
 
-        if (!empty($filters['user_id'])) {
-            $users = [$userRepository->find($filters['user_id'])];
-        } else {
-            $users = $userRepository->findByFilters($filters, $sort, $direction);
-        }
-        
+        $pagination = $paginator->paginate(
+            $query,
+            $request->query->getInt('page', 1),
+            10,
+            [
+                'defaultSortFieldName' => 'u.lastname',
+                'defaultSortDirection' => 'asc',
+            ]
+        );
+
         return $this->render('user/index.html.twig', [
-            'users' => $users,
+            'users' => $pagination,
             'allUsers' => $userRepository->findBy([], ['lastname' => 'ASC']),
             'filters' => $filters,
-            'currentSort' => $sort,
-            'currentDirection' => $direction
-        ]);        
+        ]); 
     }
 
     #[Route('/add', name: 'add')]
