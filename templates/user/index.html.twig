@@ -100,7 +100,7 @@
             '<a href="mailto:' ~ user.email ~ '" class="text-blue-600 hover:underline">' ~ user.email ~ '</a>',
             user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : '<span class="text-gray-400">Jamais</span>',
             user.status ? '<span class="badge bg-success">Actif</span>' : '<span class="badge bg-secondary">Inactif</span>',
-            user.role ? '<span class="badge bg-info text-dark">' ~ user.role.label ~ '</span>' : '-',
+            user.role ? '<span class="text-dark">' ~ user.role.label ~ '</span>' : '-',
             user.hiredDate ? user.hiredDate|date('d/m/Y') : '-',
             user.contractEndDate ? user.contractEndDate|date('d/m/Y') : '<span class="text-gray-400 italic">Non défini</span>',
             '<div class="flex items-center gap-2"><div class="w-4 h-4 rounded-full" style="background-color:' ~ user.color ~ '"></div><span style="color:' ~ user.color ~ '">' ~ user.color ~ '</span></div>',
