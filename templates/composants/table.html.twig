@@ -1,32 +1,24 @@
 <div class="overflow-x-auto w-full border border-gray-200 rounded-xl shadow-sm">
-	<table
-		class="table w-full">
-		{# En-tête du tableau (le fameux "haut") #}
+	<table class="table w-full" data-controller="sort">
 		<thead class="bg-gray-200">
 			<tr>
 				{% for column in columns %}
-					<th class="text-black text-[15px] font-semibold py-4 uppercase tracking-wider">
-						{{ column }}
+					<th class="text-black text-[15px] font-semibold py-4 uppercase tracking-wider cursor-pointer hover:bg-gray-300 transition-colors" data-action="click->sort#sortBy">
+						<div class="flex items-center justify-between px-4">
+							{{ column }}
+							<span class="text-gray-400 text-xs">↕</span>
+						</div>
 					</th>
 				{% endfor %}
 			</tr>
 		</thead>
 
-		{# Corps du tableau #}
 		<tbody class="bg-white">
 			{% for row in data %}
-				<tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-none">
+				<tr class="hover:bg-gray-50 border-b border-gray-100">
 					{% for cell in row %}
-						<td class="text-gray-700 py-4">
-							{{ cell|raw }}
-						</td>
+						<td class="text-gray-700 py-4 px-4">{{ cell|raw }}</td>
 					{% endfor %}
-				</tr>
-			{% else %}
-				<tr>
-					<td colspan="{{ columns|length }}" class="text-center py-10 text-gray-400 italic">
-						Aucune donnée disponible
-					</td>
 				</tr>
 			{% endfor %}
 		</tbody>

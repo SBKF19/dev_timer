@@ -2,9 +2,9 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-	<div class="p-8">
+	<div class="container mx-auto p-6">
 		<div class="flex justify-between items-center mb-6">
-			<h1 class="text-2xl font-bold">Rappels Mails</h1>
+			<h1 class="text-2xl font-bold text-gray-800">Rappels</h1>
 			{% include 'composants/button.html.twig' with {
             'label': 'Nouveau rappel',
             'href': path('app_reminder_new'),
@@ -38,13 +38,12 @@
 				</a>
 			</div>
 			{% endset %}
-
 			{% set table_data = table_data|merge([[
-            jours[r.sendDay],
-            r.sendTime|date('H:i'),
-            status_html,
-            actions_html
-        ]]) %}
+			'<span class="hidden">' ~ r.sendDay ~ '</span>' ~ jours[r.sendDay],
+			r.sendTime|date('H:i'),
+			status_html,
+			actions_html
+    ]]) %}
 		{% endfor %}
 
 		{% include 'composants/table.html.twig' with {

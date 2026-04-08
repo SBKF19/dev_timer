@@ -2,16 +2,16 @@
 	class="w-72 h-screen bg-white border-r border-gray-200 flex flex-col p-6 shadow-sm">
 	{# Logo #}
 	<div class="mb-10 px-2">
-		<img src="{{ asset('images/logo_ec2e.png') }}" alt="EC2E Logo" class="w-full max-w-[180px]">
+		<img src="{{ asset('images/LOGO_EC2E.png') }}" alt="EC2E Logo" class="w-full max-w-[180px]">
 	</div>
 
 	{# Navigation #}
 	<nav class="flex-1 space-y-2">
 		{% if is_granted('ROLE_USER') %}
-			{{ _self.nav_item('test', 'Accueil', 'accueil.png', active_menu == 'accueil') }}
+			{{ _self.nav_item(path('app_home'), 'Accueil', 'accueil.png', active_menu == 'accueil') }}
 			{{ _self.nav_item(path('app_project'), 'Projets', 'projet.png', active_menu == 'projets') }}
 			{{ _self.nav_item(path('hour_entry_list'), 'Saisie des heures', 'saisie.png', active_menu == 'timer') }}
-			{{ _self.nav_item('test', 'Reporting Global', 'reporting.png', active_menu == 'reporting') }}
+			{{ _self.nav_item(path('reporting_global_list'), 'Reporting Global', 'reporting.png', active_menu == 'reporting') }}
 		{% endif %}
 
 		<hr class="my-4 border-gray-100">
@@ -21,8 +21,8 @@
 			{{ _self.nav_item(path('user_list'), 'Gestion des comptes', 'gestion.png') }}
 			{{ _self.nav_item(path('app_schedule'), 'Horaires', 'horraire.png') }}
 			{{ _self.nav_item(path('app_reminder_index'), 'Rappel email', 'rappel.png') }}
-			{{ _self.nav_item('test', 'Jours fériés', 'jourferie.png') }}
-			{{ _self.nav_item('test', 'Corrections', 'correction.png') }}
+			{{ _self.nav_item(path('app_holiday'), 'Jours fériés', 'jourferie.png') }}
+			{{ _self.nav_item(path('manager_hour_entry_list'), 'Corrections', 'correction.png') }}
 		{% endif %}
 	</nav>
 
