@@ -98,9 +98,21 @@ class ProjectController extends AbstractController
     public function list(ProjectRepository $projectRepo, Request $request): Response
     {
         $projects = $projectRepo->findAll();
+        $data = [];
+        foreach ($projects as $project) {
+            $data[] = [
+                $project->getName(),
+                $project->getDescription() ?: '-',
+                $project->getCreatedAt()->format('d/m/Y'),
+                $project->getManager() ? $project->getManager()->getLastName() : '-',
+                '<span style="color: ' . $project->getColor() . ';">' . $project->getColor() . '</span>',
+                '<a href="...">Modifier</a>'
+            ];
+        }
 
         return $this->render('project/list.html.twig', [
-            'projects' => $projects
+            'columns' => ['Nom', 'Description', 'Date', 'Responsable', 'Couleur', 'Actions',],
+            'data' => $data
         ]);
     }
 }
