@@ -652,19 +652,29 @@ class TimeStatsService
     }
 
     /**
-     * Fonction pour obtenir les statistiques de complétion de la semaine en cours
+     * Fonction pour obtenir les statistiques de complétion du mois en cours
      */
-    public function getCompletionStats(User $user): array
+    public function getCompletionStats(User $user, ?\DateTimeInterface $startDate = null, ?\DateTimeInterface $endDate = null): array
     {
-        $startOfWeek = new \DateTime('monday this week');
-        $endOfWeek = (clone $startOfWeek)->modify('+6 days');
+        // Initialisation des dates : si null, on prend le mois en cours
+        $start = $startDate ?? new \DateTime('first day of this month');
+        $end = $endDate ?? new \DateTime('last day of this month');
+        
+        $start->setTime(0, 0, 0);
+        $end->setTime(23, 59, 59);
 
-        $totalTheo = 0; $totalSaisie = 0;
+        $totalTheo = 0; 
+        $totalSaisie = 0;
         $holidayMap = $this->getHolidayMap();
-        $period = new \DatePeriod($startOfWeek, new \DateInterval('P1D'), $endOfWeek, \DatePeriod::INCLUDE_END_DATE);
+        
+        //  Calcul du temps théorique basé sur le planning (Schedule)
+        $period = new \DatePeriod($start, new \DateInterval('P1D'), $end, \DatePeriod::INCLUDE_END_DATE);
 
         foreach ($period as $date) {
+            // On ignore les jours fériés
             if (isset($holidayMap[$date->format('Y-m-d')])) continue;
+
+            // On récupère le planning actif pour ce jour précis de la semaine
             $schedules = $this->scheduleRepository->findActiveSchedulesByDay((int)$date->format('N'), $date);
             foreach ($schedules as $s) {
                 $diff = $s->getStartTime()->diff($s->getEndTime());
@@ -672,9 +682,12 @@ class TimeStatsService
             }
         }
 
+        // Calcul du temps réellement saisi 
         $entries = $this->hourEntryRepository->createQueryBuilder('h')
             ->where('h.user = :u AND h.startDate >= :s AND h.endDate <= :e')
-            ->setParameter('u', $user)->setParameter('s', $startOfWeek)->setParameter('e', $endOfWeek)
+            ->setParameter('u', $user)
+            ->setParameter('s', $start)
+            ->setParameter('e', $end)
             ->getQuery()->getResult();
 
         foreach ($entries as $entry) {
@@ -682,6 +695,7 @@ class TimeStatsService
             $totalSaisie += ($diff->h * 60) + $diff->i;
         }
 
+        // Retourne les stats formatées
         return [
             'percentage' => $totalTheo > 0 ? min(100, round(($totalSaisie / $totalTheo) * 100)) : 0,
             'missingHours' => max(0, round(($totalTheo - $totalSaisie) / 60, 1)),
