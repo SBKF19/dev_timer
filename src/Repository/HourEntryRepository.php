@@ -178,6 +178,22 @@ class HourEntryRepository extends ServiceEntityRepository
         return $qb->getQuery();
     }
 
+    public function getHourForProject(int $projectId): float
+    {
+        $entries = $this->findBy(['project' => $projectId]);
+        $totalSeconds = 0;
+
+        foreach ($entries as $entry) {
+            // Calcul de la différence entre les deux objets DateTime
+            $interval = $entry->getStartDate()->diff($entry->getEndDate());
+
+            // Conversion de l'intervalle en secondes totales
+            $seconds = ($interval->days * 24 * 3600) + ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
+            $totalSeconds += $seconds;
+        }
+
+        return $totalSeconds / 3600;
+    }
 
     //    /**
     //     * @return HourEntry[] Returns an array of HourEntry objects

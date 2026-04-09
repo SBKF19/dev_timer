@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Project;
 use App\Form\ProjectType;
+use App\Repository\HourEntryRepository;
 use App\Repository\ProjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -95,7 +96,7 @@ class ProjectController extends AbstractController
     }
 
     #[Route('/projects', name: 'app_project', methods: ['GET', 'POST'])]
-    public function list(ProjectRepository $projectRepo, Request $request): Response
+    public function list(ProjectRepository $projectRepo, HourEntryRepository $entryRepo, Request $request): Response
     {
         $projects = $projectRepo->findAll();
         $data = [];
@@ -105,13 +106,14 @@ class ProjectController extends AbstractController
                 $project->getDescription() ?: '-',
                 $project->getCreatedAt()->format('d/m/Y'),
                 $project->getManager() ? $project->getManager()->getLastName() : '-',
+                $entryRepo->getHourForProject($project->getId()),
                 '<span style="color: ' . $project->getColor() . ';">' . $project->getColor() . '</span>',
                 '<a href="...">Modifier</a>'
             ];
         }
 
         return $this->render('project/list.html.twig', [
-            'columns' => ['Nom', 'Description', 'Date', 'Responsable', 'Couleur', 'Actions',],
+            'columns' => ['Nom', 'Description', 'Date', 'Responsable', 'Heures travaillées', 'Couleur', 'Actions',],
             'data' => $data
         ]);
     }
