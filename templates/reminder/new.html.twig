@@ -34,10 +34,11 @@
 
 				{# 3. Statut (Composant Switch) #}
 				{% include 'composants/switch.html.twig' with {
-                    'label': 'Rappel actif',
-                    'name': form.is_active.vars.full_name,
-                    'checked': false
-                } %}
+                'label': 'Rappel actif',
+                'label_off': 'Inactif',
+                'name': form.is_active.vars.full_name,
+                'checked': false
+            } %}
 				{{ form_widget(form._token) }}
 				{# 4. Boutons d'action #}
 				<div class="flex gap-4 pt-4">
