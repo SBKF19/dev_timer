@@ -38,7 +38,7 @@ class UserController extends AbstractController
 
         return $this->render('user/index.html.twig', [
             'users' => $pagination,
-            'allUsers' => $userRepository->findBy([], ['lastname' => 'ASC']),
+            'allUsers' => $userRepository->findBy(['deleted_at' => null], ['lastname' => 'ASC']),
             'filters' => $filters,
         ]); 
     }
