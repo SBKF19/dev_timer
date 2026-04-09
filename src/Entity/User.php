@@ -37,6 +37,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[Assert\NotBlank(message: "La date d'embauche est obligatoire.")]
     private ?DateTimeInterface $hired_date = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -66,6 +67,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\ManyToOne(inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank(message: "Le rôle est obligatoire.")]
     private ?Role $role = null;
 
     /**
@@ -218,7 +220,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->hired_date;
     }
 
-    public function setHiredDate(DateTimeInterface $hired_date): static
+    public function setHiredDate(?DateTimeInterface $hired_date): static
     {
         $this->hired_date = $hired_date;
         return $this;

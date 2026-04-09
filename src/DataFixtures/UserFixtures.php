@@ -42,7 +42,7 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
                 'role_id' => 1,
                 'photo_path' => 'uploads/photos/alice.jpg',
                 'status' => true,
-                'contract_end_date' => '2025-02-15',
+                'contract_end_date' => '2027-02-15',
                 'color' => '#3498db',
             ],
         ];

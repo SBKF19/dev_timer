@@ -71,7 +71,8 @@ class HomeController extends AbstractController
         $activityChart->setOptions($this->getDefaultOptions('Heures par activité'));
 
         // --- 4. AUTRES STATS ---
-        $completionStats = $timeStatsService->getCompletionStats($this->getUser());
+        $completionStats = $timeStatsService->getCompletionStats($this->getUser(), $startDate, $endDate);
+        
 
         // --- 5. RENDU ---
         return $this->render('home/home.html.twig', [
