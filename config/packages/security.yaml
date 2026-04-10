@@ -42,18 +42,18 @@ security:
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/reset-password, roles: PUBLIC_ACCESS }
-        - { path: ^/users, roles: ROLE_RESPONSABLE }
+        - { path: ^/user, roles: ROLE_RESPONSABLE }
         - { path: ^/schedule, roles: ROLE_RESPONSABLE }
         - { path: ^/reminder, roles: ROLE_RESPONSABLE }
         - { path: ^/holiday, roles: ROLE_RESPONSABLE }
-        - { path: ^/manager/corrections, roles: ROLE_RESPONSABLE }
+        - { path: ^/manager-hour-entry, roles: ROLE_RESPONSABLE }
 
         # --- SECTION UTILISATEUR (Accès ROLE_USER) ---
         # Ces routes sont accessibles par les utilisateurs ET les responsables (via la hiérarchie)
         - { path: ^/projects, roles: ROLE_USER }
         - { path: ^/project, roles: ROLE_USER }
         - { path: ^/hours, roles: ROLE_USER }
-        - { path: ^/reporting, roles: ROLE_USER }
+        - { path: ^/reporting-global, roles: ROLE_USER }
         - { path: ^/home, roles: ROLE_USER }
 
 when@test:
